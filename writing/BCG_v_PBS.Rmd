@@ -31,6 +31,7 @@ library(ggcorrplot)
 library(tidyverse)
 library(scales)
 library(viridis)
+library(superheat)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -831,49 +832,23 @@ sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
 
 ```
 
-Split the data into CD3+CD4+CD8- CD3+CD4-CD8+, double negative (CD4-CD8-), and double positive (CD4+CD8+) for prettier plots
-
-(Maybe splitting isn't the best way to do it - I could also filter or do what I did for the Colombia dataset)
-```{r fig.width = 9, fig.height = 8}
-
-test_rearrange <- sample_populations %>%
-  arrange(CD4, CD8) 
-
-CD4_split <- base::split(test_rearrange, test_rearrange$CD4) 
-  
-CD4_0 <- CD4_split[[1]] 
-CD4_1 <- CD4_split[[2]]
-
-CD4_0_CD8_split <- split(CD4_0, CD4_0$CD8)
-
-CD4_0_CD8_0 <- CD4_0_CD8_split[[1]] %>%
-  mutate_if(is.factor, as.numeric.factor)
-CD4_0_CD8_1 <- CD4_0_CD8_split[[2]]%>%
-  mutate_if(is.factor, as.numeric.factor)
-
-CD4_1_CD8_split <- split(CD4_1, CD4_1$CD8)
-
-CD4_1_CD8_0 <- CD4_1_CD8_split[[1]]%>%
-  mutate_if(is.factor, as.numeric.factor)
-CD4_1_CD8_1 <- CD4_1_CD8_split[[2]]%>%
-  mutate_if(is.factor, as.numeric.factor)
-
-```
-
-Want to add annotations to the graphs
+Want to add annotations to the phenotype plot
 
 - lineage
-- resident
 - cell
+- resident
+
+based on expression of different markers. The phenotype plot is then arranged by lineage, cell and resident cells and split by the lineage (I should try to find a way to do this automatically).
 
 ```{r}
 
+# these are the colors I want for the pheatmap annotations
 my_colors <- list(cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
                 `TSCM` = "#00B0F6", `Unknown` = "yellow"),
                 resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
 
-
-tester123 <- sample_populations %>%
+# take the filtered data and add annotations for the differnt lineages, cell type, and resident status
+phenotype_data <- sample_populations %>%
   mutate_all(~as.numeric.factor(.)) %>%
       mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
                           ifelse(CD4 == 1 & CD8 ==0,"T Helper",
@@ -890,15 +865,16 @@ tester123 <- sample_populations %>%
   mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
 
-tester123_annot <- tester123 %>%
+# create an annotated data frame to add to pheatmap
+phenotype_annot <- tester123 %>%
   select(resident, cell, lineage) %>%
   mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
 
-
-pheatmap(tester123[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
+# plot the data with different annotations
+pheatmap(phenotype_data[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = paste("Pop", 1:nrow(sample_populations)), 
-           annotation_row = tester123_annot,  gaps_row = c(17, 29, 35),
+           annotation_row = phenotype_annot,  gaps_row = c(17, 29, 35),
            cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
          color = viridis_colors, cutree_rows = 2,
            main = "Unique CD3+ Cells")
@@ -907,24 +883,29 @@ pheatmap(tester123[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
 Want to get the percentages added so can plot the percentages with the new 
 
 ```{r}
-
-annot_all <- rbind(add_annot_dn, add_annot_CD4, add_annot_CD8, add_annot_dp) %>%
+# change the population rownames to column 
+phenotype_data <- phenotype_data %>%
   rownames_to_column(var = "population")
 
+# convert the marker columns of factor class into numeric
 all_gated <- all_gated %>%
   mutate_if(is.factor, ~as.numeric.factor(.)) 
 
-add_perc <- left_join(annot_all, all_gated)
+# add the percentages from original data to the populations of filtered data
+add_perc <- left_join(phenotype_data, all_gated)
 
+# expand the data so can see which files have 0 cells in a phenotype
 all_options <- expand(add_perc, population, filename)
 
-add_pops <- left_join(all_options, annot_all)
+# add the populations back 
+add_pops <- left_join(all_options, phenotype_data)
 
+# add the percentages back
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
   mutate_all(funs(replace_na(., 0))) 
 
-
+# confirm that the populations were added correctly
 unique(annot_all$population)
 
 ```
@@ -936,84 +917,19 @@ Data Visualization
 Removed : , add_annot_dp from rbind
 ```{r fig.height = 4, fig.width = 4}
 
-# Normal 
-
-cor_attempt <- sample_populations_all_groups %>%
-  spread(key = population, value = percentage) %>%
-  select(-filename) %>%
-  select(c(paste0("Pop", 1:37)))
-
-corr <- round(cor(cor_attempt), 1)
-
-ggcorrplot(corr, colors = viridis(3))
-
-# Removing "Pop"
-
-annot_all <- rbind(add_annot_dn, add_annot_CD4, add_annot_CD8, add_annot_dp) %>%
-  rownames_to_column(var = "population")
-
-all_gated <- all_gated %>%
-  mutate_if(is.factor, ~as.numeric.factor(.)) 
-
-add_perc <- left_join(annot_all, all_gated)
-
-all_options <- expand(add_perc, population, filename)
-
-add_pops <- left_join(all_options, annot_all)
-
-sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
-  select(population, filename, percentage) %>%
-  mutate_all(funs(replace_na(., 0))) 
-
-# Correlation plot without "pop"
-
-cor_attempt <- sample_populations_all_groups %>%
-  mutate(population= str_replace(population, "Pop", ".  ")) %>%
-  spread(key = population, value = percentage) %>%
-  select(-filename) %>%
-  select(c(paste0(".  ", 1:37)))
-
-corr <- round(cor(cor_attempt), 1)
-
-ggcorrplot(corr, colors = viridis(3)) 
-
-# Correlation plot without "pop"
-
-cor_attempt2 <- sample_populations_all_groups %>%
+# correlation plot without the name "pop"
+corr <- sample_populations_all_groups %>%
   mutate(population= str_replace(population, "Pop", "")) %>%
   spread(key = population, value = percentage) %>%
   select(-filename) %>%
-  select(c(paste0(1:41)))
+  select(c(paste0(1:nrow(phenotype_data))))
 
+corr <- round(cor(corr), 1)
 
-unique(sample_populations_all_groups$population)
-corr2 <- round(cor(cor_attempt2), 1)
+# plot the population correlation plot separated by the lineages
+superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)), left.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)))
 
-class(corr2)
-
-ggcorrplot(corr2, colors = viridis(3)) +
-  scale_x_continuous(breaks = 1:37)+
-  scale_y_continuous(breaks = 1:37) +
-    xlab("Population") +
-  ylab("Population") +
-  ggtitle("No theme")
-
-ggcorrplot(corr2, colors = viridis(3)) +
-  scale_x_continuous(breaks = 1:37)+
-  scale_y_continuous(breaks = 1:37) +
-  theme_classic() +
-  xlab("Population") +
-  ylab("Population") +
-  ggtitle("classic theme")
-
-
-# try superheat 
-library(superheat)
-
-superheat(corr2, title = "Population Correlation", row.title = "Populations", column.title = "Populations", grid.hline = FALSE, grid.vline = FALSE, bottom.label.col = c(rep("pink", 17), rep("light blue", 14), rep("orange", 6)), left.label.col = c(rep("pink", 17), rep("light blue", 14), rep("orange", 6)))
-
-superheat(corr2, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)), left.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)))
-
+# creates a legend for the superheat correlation plot
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
 legend("topleft", legend =c("Double Negative", "T helper", "Cytotoxic T", "Double Positive"), pch=16, pt.cex=3, cex=1.5, bty='n',col = c("pink", "light blue", "orange", "orchid3"))
 mtext("Cell Lineage", at=0.2, cex=2)
