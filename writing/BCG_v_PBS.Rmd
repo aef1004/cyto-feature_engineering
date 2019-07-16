@@ -374,10 +374,8 @@ TNF_FMO <- FMO_gated_df %>%
   dplyr::filter(filename == "FMOs_TNF-a_20190218_154111_Unmixed.fcs")
 ```
 
+Feature engineering FMOs and plot
 
-
-
-FMO images
 ```{r fig.width = 9, fig.height=5, warning=FALSE}
 
 p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = SSC.A)) +
@@ -410,6 +408,7 @@ p3 <- ggplot(CD8_FMO, aes(x = CD8, y = SSC.A)) +
   theme(axis.text = element_text(size =12),
         axis.title = element_text(size = 20))
 
+# this plot is removed because we are not going to be using this marker
 p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
@@ -471,7 +470,7 @@ p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = SSC.A)) +
   theme(axis.text = element_text(size =12),
         axis.title = element_text(size = 20))
 
-
+# this plot is removed because we are not going to be using this marker
 p10 <- ggplot(CD69_FMO, aes(x = CD69, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
@@ -599,14 +598,11 @@ grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
 
 Gating the sample data
 
-**Problem - when I try to read in the fcsfiles with read.ncdfFlowSet it doesn't read in all of the parameters. I have checked with read.FCS and it reads them all in correctly in that case..**
+I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized. I will need to read them in separately and then rename one of the two so that the cases match
 
-I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized
-
-This analysis currently only include D30 and D60
 ```{r warning=FALSE}
 
-fcsFiles <- list.files("../Data/flow/Tcell/", 
+fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -621,11 +617,16 @@ gating(initial_gate, gs)
 # View the gates
 plotGate(gs[[12]])
 
-# Pull out the data
+# Pull out the gated data
 gated_data <- getData(gs, "live") %>% 
   as.flowSet() 
 
+# plot the gates to make sure they look okay
+for (i in 1:length(gs)) {
+  plotGate(gs[[i]])
+}
 
+# read in the D90 data
 D90_ws <- list.files("../Data/flow/", pattern = "AmyGating_intracellular_D90.csv", full = TRUE)
 
 D90_initial_gate <- gatingTemplate(D90_ws, autostart = 1L) 
@@ -646,22 +647,10 @@ gating(D90_initial_gate, D90_gs)
 D90_gated_data <- getData(D90_gs, "live") %>% 
   as.flowSet() 
 
-
-for (i in 1:length(gs)) {
-  plotGate(gs[[i]])
-}
-
-
-```
-
-Feature cut the data to get all of the possible populations for each file with the cell count and number of cells 
-
-Remove FoxP3
-Remove CD69 - spreading from Sca1 makes the marker unusable
-Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all samples
-```{r}
+# initialize the gated data df
 all_gated_df = data.frame()
 
+# convert the gated flow files to dataframes and add a filename column
 for (i in 1:length(gated_data)) {
   all_data <- gated_data[[i]] %>%
     exprs() %>%
@@ -671,8 +660,10 @@ for (i in 1:length(gated_data)) {
   all_gated_df <- rbind(all_gated_df, all_data)
 }
 
+# initialize the D90 gated data df
 D90_all_gated_df = data.frame()
 
+# convert the gated flow files to dataframes and add a filename column
 for (i in 1:length(D90_gated_data)) {
   D90_all_data <- D90_gated_data[[i]] %>%
     exprs() %>%
@@ -682,14 +673,25 @@ for (i in 1:length(D90_gated_data)) {
   D90_all_gated_df <- rbind(D90_all_gated_df, D90_all_data)
 }
 
+# remove parameters that are not found in D30 and D60 data and rename the D90 Zombie column
 D90_all_gated_df <- D90_all_gated_df %>%
-  select(Time, SSC.H, FSC.H, ends_with(".A"), `FSC.A`, `SSC.A`, -`SSC.B.A`, filename) %>%
+  select(Time, SSC.H, FSC.H, ends_with(".A"), 
+         `FSC.A`, `SSC.A`, -`SSC.B.A`, filename) %>%
   rename("Zombie.NIR.A" = "Zombie.Nir.A")
 
+# combine the D30, D60, and D90 data into 1 dataframe
 all_gated_df <- rbind(all_gated_df, D90_all_gated_df)
 
-# confirm that the for loop works 
+# confirm that all of the data is here
 unique(all_gated_df$filename)
+```
+
+Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the 99%.
+
+Remove FoxP3
+Remove CD69 - spreading from Sca1 makes the marker unusable
+Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all samples
+```{r}
 
 all_gated <- all_gated_df %>%
   dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
@@ -774,15 +776,13 @@ all_gated <- all_gated_df %>%
          percentage = (100*cell_no / total_count_by_file)) %>%
   ungroup() 
 
-
 ```
 
+Data visualization
 
-
-
+We first want to 
 Explore the data 
 For example, we only want to look at CD3+ cells
-
 
 ```{r}
 # view the cell phenotypes
