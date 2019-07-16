@@ -252,7 +252,7 @@ unique(FMO_gated_df$filename)
 # I accidently got CD4 into the CD4 FMO, so I had to redo it. I also tried CD69 to see if it was experiment-dependent, but CD69 problems are due to spillover
 
 # Add in the updated FMOS
-FMO_fcsFiles_redo <- list.files("../Data/flow/Tcell/FMOs/June6_Redo", 
+FMO_fcsFiles_redo <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs/June6_Redo", 
                        pattern = ".fcs", full = TRUE)
 
 ncfs_FMO_redo <- read.ncdfFlowSet(FMO_fcsFiles_redo) 
@@ -628,11 +628,12 @@ for (i in 1:length(gs)) {
 }
 
 # read in the D90 data
-D90_ws <- list.files("../Data/flow/", pattern = "AmyGating_intracellular_D90.csv", full = TRUE)
+D90_ws <- list.files("../Data/flow/BCG_v_PBS", 
+                     pattern = "AmyGating_intracellular_D90.csv", full = TRUE)
 
 D90_initial_gate <- gatingTemplate(D90_ws, autostart = 1L) 
 
-D90_fcsFiles <- list.files("../Data/flow/Tcell/D90", 
+D90_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/D90", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -813,14 +814,16 @@ sample_populations <- all_gated %>%
   ungroup() %>%
   mutate(population = paste0("Pop", 1:length(CD3)))
 
-# view the percentage of cells in each population
-
+# add in the percentage of cells in each specific population after the filter
 test <- left_join(sample_populations, all_gated)
 
+# expand to add in the data where a mouse may have 0 cells in a certain population identified after the filter
 all_options <- expand(test, population, filename)
 
+# add in the population information
 add_pops <- left_join(all_options, sample_populations)
 
+# add populations to the original gated data and replace NA percentages with 0
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
   mutate_all(funs(replace_na(., 0)))
@@ -828,21 +831,15 @@ sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
 
 ```
 
-Try to rearrange plots
-Split the data into CD3+CD4+CD8- CD3+CD4-CD8+, double negative (CD4-CD8-), and double positive (CD4+CD8+)
+Split the data into CD3+CD4+CD8- CD3+CD4-CD8+, double negative (CD4-CD8-), and double positive (CD4+CD8+) for prettier plots
 
-Maybe splitting isn't the best way to do it - I could `select` by the CD4 and CD8 instead
+(Maybe splitting isn't the best way to do it - I could also filter or do what I did for the Colombia dataset)
 ```{r fig.width = 9, fig.height = 8}
 
-
-# this was originally in the test_rearrangem but now don't need  mutate_all(~as.numeric.factor(.)) 
-# also don't need `as.numeric.factor`
 test_rearrange <- sample_populations %>%
   arrange(CD4, CD8) 
 
 CD4_split <- base::split(test_rearrange, test_rearrange$CD4) 
-
-  class(CD4_split)
   
 CD4_0 <- CD4_split[[1]] 
 CD4_1 <- CD4_split[[2]]
@@ -864,106 +861,48 @@ CD4_1_CD8_1 <- CD4_1_CD8_split[[2]]%>%
 ```
 
 Want to add annotations to the graphs
+
+- lineage
+- resident
+- cell
+
 ```{r}
 
 my_colors <- list(cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
-               `Resident` = "#00BF7D", `TSCM` = "#00B0F6", `Unknown` = "yellow"))
+                `TSCM` = "#00B0F6", `Unknown` = "yellow"),
+                resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
 
-# now want to add other populations
-add_annot_dn <- CD4_0_CD8_0 %>%
+
+tester123 <- sample_populations %>%
+  mutate_all(~as.numeric.factor(.)) %>%
+      mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive")))) %>%
   mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
                        ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
                               ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
                                      ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                            ifelse(CD103 ==1, "Resident",
-                                     "Unknown")))))) %>%
-  select(cell, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN, TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c(1:nrow(CD4_0_CD8_0)))) %>%
+                                     "Unknown"))))) %>%
+  mutate(resident = ifelse(CD103 == 1, "Resident", "Non-resident")) %>%
+  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
+  arrange(match(lineage, c("Double Negative", "T Helper", "Cytotoxic T", "Double Positive")), cell, resident) %>%
+  mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
-  
-  
-named_annot_dn <- add_annot_dn$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
 
-row.names(named_annot_dn) <- paste0("Pop", c(1:nrow(CD4_0_CD8_0)))
-
-
-# CD4+
-add_annot_CD4 <- CD4_1_CD8_0 %>%
-  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                            ifelse(CD103 ==1, "Resident",
-                                     "Unknown")))))) %>%
-  select(cell, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0)+1):(nrow(CD4_0_CD8_0)+ nrow(CD4_1_CD8_0))))) %>%
+tester123_annot <- tester123 %>%
+  select(resident, cell, lineage) %>%
+  mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
 
 
-  
-named_annot_CD4 <- add_annot_CD4$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-row.names(named_annot_CD4) <- paste0("Pop", c((nrow(CD4_0_CD8_0)+1):(nrow(CD4_0_CD8_0)+ nrow(CD4_1_CD8_0))))
-
-
-
-# CD8+
-add_annot_CD8 <- CD4_0_CD8_1 %>%
-  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                            ifelse(CD103 ==1, "Resident",
-                                     "Unknown")))))) %>%
-  select(cell, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) + 1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)+ nrow(CD4_0_CD8_1))))) %>%
-  column_to_rownames("population")
-
-
-  
-named_annot_CD8 <- add_annot_CD8$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-row.names(named_annot_CD8) <- paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) + 1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)+ nrow(CD4_0_CD8_1))))
-
-
-# Double Positive
-add_annot_dp <- CD4_1_CD8_1 %>%
-  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                            ifelse(CD103 ==1, "Resident",
-                                     "Unknown")))))) %>%
-  select(cell, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) +
-                              nrow(CD4_0_CD8_1)+1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)
-                                                    +nrow(CD4_0_CD8_1)+ nrow(CD4_1_CD8_1))))) %>%
-  column_to_rownames("population")
-
-
-  
-named_annot_dp <- add_annot_dp$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-row.names(named_annot_dp) <- paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) +
-                              nrow(CD4_0_CD8_1)+1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)
-                                                    +nrow(CD4_0_CD8_1)+ nrow(CD4_1_CD8_1))))
-
-  
-  
+pheatmap(tester123[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
+           labels_row = paste("Pop", 1:nrow(sample_populations)), 
+           annotation_row = tester123_annot,  gaps_row = c(17, 29, 35),
+           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
+         color = viridis_colors, cutree_rows = 2,
+           main = "Unique CD3+ Cells")
 ```
-
 
 Want to get the percentages added so can plot the percentages with the new 
 
@@ -1241,180 +1180,7 @@ ggplot(pops_CFUs_D30_PBS, aes(Number, percentage, fill = Number)) +
 Want to add additional column for Resident
 ```{r}
 
-my_colors <- list(cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
-                `TSCM` = "#00B0F6", `Unknown` = "yellow"),
-                resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
 
-# now want to add other populations
-add_annot_dn <- CD4_0_CD8_0 %>%
-  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                     "Unknown"))))) %>%
-  mutate(resident = ifelse(CD103 == 1, "Resident",
-                           ifelse(CD103 == 0, "Non-resident"))) %>%
-    mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
-                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
-                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
-                                 "Double Positive")))) %>%
-  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c(1:nrow(CD4_0_CD8_0)))) %>%
-  column_to_rownames("population")
-  
-  
-named_annot_dn_cell <- add_annot_dn$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-named_annot_dn_resident <- add_annot_dn$resident %>%
-  data.frame() %>%
-  dplyr::rename(resident = ".")
-
-named_annot_dn_lineage <- add_annot_dn$lineage %>%
-  data.frame() %>%
-  dplyr::rename(lineage = ".")
-
-named_annot_dn_combine <- cbind( named_annot_dn_cell, named_annot_dn_resident, named_annot_dn_lineage)
-
-row.names(named_annot_dn_combine) <- paste0("Pop", c(1:nrow(CD4_0_CD8_0)))
-
-
-pheatmap(add_annot_dn[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", 1:nrow(CD4_0_CD8_0)),   annotation_row = named_annot_dn_combine,
-           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors, 
-         color = viridis_colors,
-           main = "Double Negative Immune Cells (CD4-CD8-)")
-
-
-
-# CD4+
-add_annot_CD4 <- CD4_1_CD8_0 %>%
-    mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                     "Unknown"))))) %>%
-  mutate(resident = ifelse(CD103 == 1, "Resident", "Non-resident")) %>%
-    mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
-                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
-                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
-                                 "Double Positive")))) %>%
-  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0)+1):(nrow(CD4_0_CD8_0)+ nrow(CD4_1_CD8_0))))) %>%
-  column_to_rownames("population")
-
-named_annot_CD4_cell <- add_annot_CD4$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-named_annot_CD4_resident <- add_annot_CD4$resident %>%
-  data.frame() %>%
-  dplyr::rename(resident = ".")
-
-named_annot_CD4_lineage <- add_annot_CD4$lineage %>%
-  data.frame() %>%
-  dplyr::rename(lineage = ".")
-
-named_annot_CD4_combine <- cbind( named_annot_CD4_cell, named_annot_CD4_resident, named_annot_CD4_lineage)
-
-row.names(named_annot_CD4_combine) <- paste0("Pop", c((nrow(CD4_0_CD8_0)+1):(nrow(CD4_0_CD8_0)+ nrow(CD4_1_CD8_0))))
-
-
-pheatmap(add_annot_CD4[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", c((nrow(CD4_0_CD8_0)+1):(nrow(CD4_0_CD8_0)+ nrow(CD4_1_CD8_0)))), annotation_row = named_annot_CD4_combine,  annotation_colors = my_colors, color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
-           main = "T helper cells (CD4+ CD8-)")
-
-
-# CD8+
-add_annot_CD8 <- CD4_0_CD8_1 %>%
-    mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                     "Unknown"))))) %>%
-  mutate(resident = ifelse(CD103 == 1, "Resident", "Non-resident")) %>%
-  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
-                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
-                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
-                                 "Double Positive")))) %>%
-  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) + 1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)+ nrow(CD4_0_CD8_1))))) %>%
-  column_to_rownames("population")
-
-named_annot_CD8_cell <- add_annot_CD8$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-named_annot_CD8_resident <- add_annot_CD8$resident %>%
-  data.frame() %>%
-  dplyr::rename(resident = ".")
-
-named_annot_CD8_lineage <- add_annot_CD8$lineage %>%
-  data.frame() %>%
-  dplyr::rename(lineage = ".")
-
-named_annot_CD8_combine <- cbind( named_annot_CD8_cell, named_annot_CD8_resident, named_annot_CD8_lineage)
-
-row.names(named_annot_CD8_combine) <- paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) + 1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)+ nrow(CD4_0_CD8_1))))
-
-
-
-pheatmap(add_annot_CD8[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) + 1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)+ nrow(CD4_0_CD8_1)))), 
-         annotation_row = named_annot_CD8_combine,  annotation_colors = my_colors, color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
-           main = "Cytotoxic T cells (CD4- CD8+)")
-
-# Double Positive
-add_annot_dp <- CD4_1_CD8_1 %>%
-    mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
-                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
-                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                     "Unknown"))))) %>%
-  mutate(resident = ifelse(CD103 == 1, "Resident", "Non-resident")) %>%
-    mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
-                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
-                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
-                                 "Double Positive")))) %>%
-  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  arrange(cell) %>%
-  mutate(population = paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) +
-                              nrow(CD4_0_CD8_1)+1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)
-                                                    +nrow(CD4_0_CD8_1)+ nrow(CD4_1_CD8_1))))) %>%
-  column_to_rownames("population")
-
-named_annot_dp_cell <- add_annot_dp$cell %>%
-  data.frame() %>%
-  dplyr::rename(cell = ".")
-
-named_annot_dp_resident <- add_annot_dp$resident %>%
-  data.frame() %>%
-  dplyr::rename(resident = ".")
-
-named_annot_dp_lineage <- add_annot_dp$lineage %>%
-  data.frame() %>%
-  dplyr::rename(lineage = ".")
-
-named_annot_dp_combine <- cbind(named_annot_dp_cell, named_annot_dp_resident, named_annot_dp_lineage)
-
-row.names(named_annot_dp_combine) <- paste0("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) +
-                              nrow(CD4_0_CD8_1)+1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)
-                                                    +nrow(CD4_0_CD8_1)+ nrow(CD4_1_CD8_1))))
-
-
-pheatmap(add_annot_dp[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", c((nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0) +
-                              nrow(CD4_0_CD8_1)+1):(nrow(CD4_0_CD8_0) + nrow(CD4_1_CD8_0)
-                                                    +nrow(CD4_0_CD8_1)+ nrow(CD4_1_CD8_1)))), 
-         annotation_row = named_annot_dp_combine,  annotation_colors = my_colors, color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
-           main = "Double Positive T cells (CD4+ CD8+)")
 
 
 # for presentation
@@ -1439,17 +1205,7 @@ removed double positive ,  from rbind and ,  from second bind
 
 
 ```{r}
-all_bind <- rbind(add_annot_dn, add_annot_CD4, add_annot_CD8, add_annot_dp)
 
-all_bind_annot <- rbind(named_annot_dn_combine, named_annot_CD4_combine,
-                        named_annot_CD8_combine, named_annot_dp_combine)
-
-pheatmap(all_bind[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", 1:nrow(all_bind)), 
-           annotation_row = all_bind_annot,  gaps_row = c(18, 32, 40),
-           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
-         color = viridis_colors, cutree_rows = 2,
-           main = "Unique CD3+ Cells")
 ```
 Explore Pop 3
 
