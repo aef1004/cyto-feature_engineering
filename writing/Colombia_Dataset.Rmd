@@ -28,6 +28,7 @@ library(ggcorrplot)
 library(tidyverse)
 library(scales)
 library(viridis)
+library(kableExtra)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -580,7 +581,9 @@ all_gated <- all_gated_df %>%
   ungroup() 
 ```
 
-Look at Phenotypes
+Data visualization
+
+We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD45+ leukocytes.
 
 ```{r}
 # to view all of the possible combinations
@@ -597,10 +600,10 @@ pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE,
          color = viridis_colors, 
            main ="All Colombia Populations")
 
+# gives the total number of populations
 nrow(total_phenotypes) 
 
-# view the specific cell phenotypes and percentages
-
+# view the specific cell phenotypes and percentages we're interested in
 sample_populations <- all_gated %>%
   dplyr::filter(CD45 == 1) %>%
   select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
@@ -609,8 +612,15 @@ sample_populations <- all_gated %>%
   ungroup() %>%
   mutate(population = paste0("Pop", 1:length(CD45)))
 
+```
 
+Data visualization
 
+- phenotype plot
+
+Want to add annotations to the phenotype plot based on expression of different markers. The phenotype plot is then arranged and split by the lineage (I should try to find a way to do this automatically).
+
+```{r}
 # Split populations based on T or B cells
 my_colors <- list(lineage = c(`T cell` = "darkorchid1", `B cell` = "#F8766D",
                 `CD3+ B cells` = "#00B0F6", `Other Luekocyte` = "yellow"))
@@ -621,8 +631,6 @@ test_rearrange <- sample_populations %>%
   mutate(population = paste0("Pop", c(1:nrow(sample_populations)))) %>%
   column_to_rownames("population") 
   #mutate_all(~as.numeric.factor(.)) %>%
-  
-  
   
 annotation <- test_rearrange %>%
   mutate(lineage = ifelse(CD3 == 1 & CD19 == 0 , "T cell",
@@ -638,36 +646,24 @@ pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
            annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
            cellwidth = 15, cellheight = 15, angle_col = 45,
            main = "Leukocytes")
-
-
 ```
 
+Note I cannot do a correlation plot because I only have 1 sample (not multiple datapoints to see how similar populations are to each other)
 
-
-Correlation Plot
-- cannot do because only have 1 sample
 ```{r}
-
+# convert the population rowname back to column so that we can use it for further analysis
 test_rearrange <- test_rearrange %>%
   rownames_to_column("population")
 
-
+# add back in the percentage data 
 sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
   select(population, percentage, -filename) %>%
   mutate_all(funs(replace_na(., 0)))
-
-
-cor_attempt <- sample_populations_all_groups %>%
-  mutate(population= str_replace(population, "Pop", "")) %>%
-  spread(key = population, value = percentage)
-
-
-corr <- round(cor(cor_attempt), 1)
-
-#superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations", grid.hline = FALSE, grid.vline = FALSE)
 ```
 
-Percentage of Cells
+Data visualization
+
+- times series
 
 ```{r}
 ggplot(sample_populations_all_groups, aes(x = factor(population, 
@@ -687,20 +683,22 @@ ggplot(sample_populations_all_groups, aes(x = factor(population,
         legend.position = "none")
 ```
 
-Test all_gated to get accurate pops
+Confirm pipeline populations with manual gating
 ```{r}
+
+# read in and clean manual gating percentage data
 manual_gating <- read_xlsx("../Data/flow/Colombia/manual_gating.xlsx") %>%
   dplyr::rename(`population` = "..1",
                 percent_manual = "Manual percent") %>%
   na.omit()
 
-
+# prepare the flow CFU data for joining with manual gating
 sample_populations_all_groups <- sample_populations_all_groups %>%
   dplyr::rename(percent_pipeline = percentage)
 
-library(kableExtra)
-# should add absolute value of the percent_pipeline-percent_manual for error (abs)
 
+# should add absolute value of the percent_pipeline-percent_manual for error (abs)
+# join the manual and pipeline percentage data
 comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population")) %>%
   mutate(difference = round(percent_pipeline - percent_manual, digits = 2)) %>%
   mutate(error = round(100*(percent_pipeline - percent_manual)/percent_manual, digits = 2)) %>%
@@ -710,12 +708,13 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
          average_difference = mean(absolute_difference)) %>%
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
+# print out the comparison data in a pretty table
 comparison[1:15,] %>%
   kable() %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
   print()
 
-
+# compare the two gating types with manual v. pipeline plot
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
