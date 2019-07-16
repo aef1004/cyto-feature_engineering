@@ -1,0 +1,742 @@
+---
+title: "Colombia Dataset"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First, the packages must be loaded.
+```{r warning= FALSE}
+library(openCyto)
+library(flowClust)
+library(data.table)
+library(flowCore)
+library(ggcyto)
+library(FlowSOM)
+library(dplyr)
+library(pheatmap)
+library(stringr)
+library(tidyr)
+library(readxl)
+library(gridExtra)
+library(ggcorrplot)
+library(tidyverse)
+library(scales)
+library(viridis)
+```
+
+
+```{r}
+
+clean_FCS <- function(fcs_file) {
+  read.FCS(fcs_file) %>%
+  exprs() %>%
+  data.frame() %>%
+  select(ends_with(".A"), -`FSC.A`) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A")  %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+}
+
+clean_sc_after_gate <- function(fcs_file) {
+  fcs_file %>%
+  select(ends_with(".A"), -`FSC.A`, `SSC.A`, filename) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A")  %>%
+   na.omit()%>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+
+}
+
+
+clean_gated <- function(file) {
+  exprs(file) %>%
+  data.frame() %>%
+  select(ends_with(".A"), -`FSC.A`) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A") %>%
+  na.omit()%>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+}
+
+# this code is from OpenCyto Github 
+# this function is from RGLab https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R
+.find_peaks <- function(x, y = NULL, num_peaks = NULL, adjust = 2, plot = FALSE, ...) {
+  x <- as.vector(x)
+
+  if (length(x) < 2) {
+    warning("At least 2 observations must be given in 'x' to find peaks.")
+    return(NA)
+  }
+
+  if (is.null(y)) {
+    dens <- density(x, adjust = adjust, ...)
+  } else {
+    y <- as.vector(y)
+    if (length(x) != length(y)) {
+      stop("The lengths of 'x' and 'y' must be equal.")
+    }
+    dens <- list(x = x, y = y)
+  }
+
+  # Discrete analogue to a second derivative applied to the KDE. See details.
+  second_deriv <- diff(sign(diff(dens$y)))
+  which_maxima <- which(second_deriv == -2) + 1
+
+  # The 'density' function can consider observations outside the observed range.
+  # In rare cases, this can actually yield peaks outside this range.  We remove
+  # any such peaks.
+  which_maxima <- which_maxima[findInterval(dens$x[which_maxima], range(x)) == 1]
+
+  # Next, we sort the peaks in descending order based on the density heights.
+  which_maxima <- which_maxima[order(dens$y[which_maxima], decreasing = TRUE)]
+  
+  # Returns the local maxima. If there are none, we return 'NA' instead.
+  if (length(which_maxima) > 0) {
+    peaks <- dens$x[which_maxima]
+    if (is.null(num_peaks) || num_peaks > length(peaks)) {
+      num_peaks <- length(peaks)
+    }
+    peaks <- peaks[seq_len(num_peaks)]
+  } else {
+    peaks <- NA
+  }
+  
+  peaks <- data.frame(x = peaks, y = dens$y[which_maxima][seq_len(num_peaks)])
+  if(plot){
+    plot(dens, main = paste("adjust =" ,  adjust))
+    points(peaks, ,col = "red")  
+  }
+  
+  peaks  
+}
+
+
+.find_valleys <- function(x, y = NULL, num_valleys = NULL, adjust = 2, ...) {
+
+  x <- as.vector(x)
+
+  if (length(x) < 2) {
+    warning("At least 2 observations must be given in 'x' to find valleys.")
+    return(NA)
+  }
+  
+  if (is.null(y)) {
+    dens <- density(x, adjust = adjust, ...)
+  } else {
+    y <- as.vector(y)
+    if (length(x) != length(y)) {
+      stop("The lengths of 'x' and 'y' must be equal.")
+    }
+    dens <- list(x = x, y = y)
+  }
+
+  # Discrete analogue to a second derivative applied to the KDE. See details.
+  second_deriv <- diff(sign(diff(dens$y)))
+  which_minima <- which(second_deriv == 2) + 1
+
+  # The 'density' function can consider observations outside the observed range.
+  # In rare cases, this can actually yield valleys outside this range. We remove
+  # any such valleys.
+  which_minima <- which_minima[findInterval(dens$x[which_minima], range(x)) == 1]
+
+  # Next, we sort the valleys in descending order based on the density heights.
+  which_minima <- which_minima[order(dens$y[which_minima], decreasing = FALSE)]
+
+  # Returns the local minima. If there are none, we return 'NA' instead.
+  if (length(which_minima) > 0) {
+    valleys <- dens$x[which_minima]
+    if (is.null(num_valleys) || num_valleys > length(valleys)) {
+      num_valleys <- length(valleys)
+    }
+    valleys <- valleys[seq_len(num_valleys)]
+  } else {
+    valleys <- NA
+  }
+  valleys
+}
+
+
+gate_mindensity_amy <- function(df, channel, filterId = "", positive = TRUE,
+                       pivot = FALSE, gate_range = NULL, min = NULL, max = NULL,
+                       peaks = NULL, ...) {
+  
+  if (missing(channel) || length(channel) != 1) {
+    stop("A single channel must be specified.")
+  }
+
+  # Filter out values less than the minimum and above the maximum, if they are
+  # given.
+
+  # I altered this to take in a dataframe rather than fcs file
+  x <- df[, channel]
+  
+  if(is.null(peaks))
+    peaks <- .find_peaks(x)[, "x"]
+  
+  if (is.null(gate_range)) {
+    gate_range <- c(min(x), max(x))
+  } else {
+    gate_range <- sort(gate_range)
+  }
+
+  
+  
+  # In the special case that there is only one peak, we are conservative and set
+  # the cutpoint as min(x) if 'positive' is TRUE, and max(x) otherwise.
+  if (length(peaks) == 1) {
+    cutpoint <- ifelse(positive, gate_range[1], gate_range[2])
+  } else {
+    # The cutpoint is the deepest valley between the two peaks selected. In the
+    # case that there are no valleys (i.e., if 'x_between' has an insufficient
+    # number of observations), we are conservative and set the cutpoint as the
+    # minimum value if 'positive' is TRUE, and the maximum value otherwise.
+    valleys <- try(.find_valleys(x), silent = TRUE)
+    valleys <- .between_interval(x = valleys, interval = gate_range)
+
+    if (any(is.na(valleys))) {
+    #FIXME:currently it is still returning the first peak,
+    #we want to pass density instead of x_between to 'min'
+    #because x_between is the signal values
+      cutpoint <- ifelse(positive, gate_range[1], gate_range[2])
+    } else if (length(valleys) == 1) {
+      cutpoint <- as.vector(valleys)
+    } else if (length(valleys) > 1) {
+      # If there are multiple valleys, we determine the deepest valley between
+      # the two largest peaks.
+      peaks <- sort(peaks[1:2])
+      cutpoint <- .between_interval(valleys, peaks)[1]
+
+      # If none of the valleys detected are between the two largest peaks, we
+      # select the deepest valley.
+      if (is.na(cutpoint)) {
+        cutpoint <- valleys[1]
+      }      
+    }
+  }
+  gate_coordinates <- ifelse(positive, list(c(cutpoint, Inf)), list(c(-Inf, cutpoint)))
+  
+  names(gate_coordinates) <- channel
+  
+  rectangleGate(gate_coordinates, filterId = filterId)
+  
+  # I added in the print(cutpoint)
+  print(cutpoint)
+  
+}
+
+# taken from https://gist.github.com/kdauria/524eade46135f6348140
+stat_smooth_func <- function(mapping = NULL, data = NULL,
+                        geom = "smooth", position = "identity",
+                        ...,
+                        method = "auto",
+                        formula = y ~ x,
+                        se = TRUE,
+                        n = 80,
+                        span = 0.75,
+                        fullrange = FALSE,
+                        level = 0.95,
+                        method.args = list(),
+                        na.rm = FALSE,
+                        show.legend = NA,
+                        inherit.aes = TRUE,
+                        xpos = NULL,
+                        ypos = NULL) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = StatSmoothFunc,
+    geom = geom,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      method = method,
+      formula = formula,
+      se = se,
+      n = n,
+      fullrange = fullrange,
+      level = level,
+      na.rm = na.rm,
+      method.args = method.args,
+      span = span,
+      xpos = xpos,
+      ypos = ypos,
+      ...
+    )
+  )
+}
+
+StatSmoothFunc <- ggproto("StatSmooth", Stat,
+                      
+                      setup_params = function(data, params) {
+                        # Figure out what type of smoothing to do: loess for small datasets,
+                        # gam with a cubic regression basis for large data
+                        # This is based on the size of the _largest_ group.
+                        if (identical(params$method, "auto")) {
+                          max_group <- max(table(data$group))
+                          
+                          if (max_group < 1000) {
+                            params$method <- "loess"
+                          } else {
+                            params$method <- "gam"
+                            params$formula <- y ~ s(x, bs = "cs")
+                          }
+                        }
+                        if (identical(params$method, "gam")) {
+                          params$method <- mgcv::gam
+                        }
+                        
+                        params
+                      },
+                      
+                      compute_group = function(data, scales, method = "auto", formula = y~x,
+                                               se = TRUE, n = 80, span = 0.75, fullrange = FALSE,
+                                               xseq = NULL, level = 0.95, method.args = list(),
+                                               na.rm = FALSE, xpos=NULL, ypos=NULL) {
+                        if (length(unique(data$x)) < 2) {
+                          # Not enough data to perform fit
+                          return(data.frame())
+                        }
+                        
+                        if (is.null(data$weight)) data$weight <- 1
+                        
+                        if (is.null(xseq)) {
+                          if (is.integer(data$x)) {
+                            if (fullrange) {
+                              xseq <- scales$x$dimension()
+                            } else {
+                              xseq <- sort(unique(data$x))
+                            }
+                          } else {
+                            if (fullrange) {
+                              range <- scales$x$dimension()
+                            } else {
+                              range <- range(data$x, na.rm = TRUE)
+                            }
+                            xseq <- seq(range[1], range[2], length.out = n)
+                          }
+                        }
+                        # Special case span because it's the most commonly used model argument
+                        if (identical(method, "loess")) {
+                          method.args$span <- span
+                        }
+                        
+                        if (is.character(method)) method <- match.fun(method)
+                        
+                        base.args <- list(quote(formula), data = quote(data), weights = quote(weight))
+                        model <- do.call(method, c(base.args, method.args))
+                        
+                        m = model
+                        eq <- substitute(~~italic(r)^2~"="~r2, 
+                                         list(a = format(coef(m)[1], digits = 3), 
+                                              b = format(coef(m)[2], digits = 3), 
+                                              r2 = format(summary(m)$r.squared, digits = 3)))
+                        func_string = as.character(as.expression(eq))
+                        
+                        if(is.null(xpos)) xpos = min(data$x)*0.9
+                        if(is.null(ypos)) ypos = max(data$y)*0.9
+                        data.frame(x=xpos, y=ypos, label=func_string)
+                        
+                      },
+                      
+                      required_aes = c("x", "y")
+)
+
+viridis_colors <- c("#3F4788FF", "#56C667FF")
+
+
+phenotype_heatmap <- function(csv_file, population_no, title) {
+  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, color = viridis_colors,
+           labels_row = paste("Pop", population_no), main = title)
+}
+
+# need to convert the factors in the extracted_pheno to numeric for plotting
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+```
+
+sc = single colors
+These single colors are using beads, so we will not gate for live and leukocytes (just take the isnglets)
+```{r}
+
+ws <- list.files("../Data/flow/Colombia", pattern = "Colombia_gating.csv", full = TRUE)
+
+# only for viewing that read in 
+dtTemplate <- fread(ws, autostart = 1L) 
+
+initial_gate <- gatingTemplate(ws, autostart = 1L) 
+
+sc_fcsFiles <- list.files("../Data/flow/Colombia/Single_Colors", 
+                       pattern = ".fcs", full = TRUE)
+
+
+# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+ncfs_sc <- read.ncdfFlowSet(sc_fcsFiles) 
+
+# apply gating set
+gs_sc <- GatingSet(ncfs_sc)
+
+# gate the samples
+gating(initial_gate, gs_sc)
+
+# View the gates
+plotGate(gs_sc[[1]])
+
+# Pull out the data
+sc_gated_data <- getData(gs_sc, "leukocytes") %>% 
+  as.flowSet() 
+
+gate_mindensity(sc_gated_data[[1]], "PE-A")
+
+```
+
+Test logicle transform
+
+- normally FSC and SSC stay linear while the markers are logicle transformed
+```{r fig.width = 9, fig.height=5, warning=FALSE}
+
+sc_gated_df_test = data.frame()
+
+for (i in 1:length(sc_gated_data)) {
+  lgcl <- estimateLogicle(sc_gated_data[[i]], channels = c( "FITC-A", "PE-A",
+                                                 "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
+  
+  sc_data_test <- transform(sc_gated_data[[i]], lgcl) %>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(sc_gated_data[i])) 
+
+  sc_gated_df_test <- rbind(sc_gated_df_test, sc_data_test)
+}
+
+unique(sc_gated_df_test$filename)
+
+
+```
+
+
+
+Pull out single colors
+```{r}
+
+
+CD3_sc <- sc_gated_df_test %>%
+  clean_sc_after_gate() %>%
+  dplyr::filter(filename == "Specimen_001_cd3_004.fcs")
+
+CD19_sc <- sc_gated_df_test %>%
+  clean_sc_after_gate() %>%
+  dplyr::filter(filename == "Specimen_001_cd19_003.fcs")
+
+CD27_sc <- sc_gated_df_test %>%
+  clean_sc_after_gate() %>%
+  dplyr::filter(filename == "Specimen_001_cd27_006.fcs")
+
+CD45_sc <- sc_gated_df_test %>%
+  clean_sc_after_gate() %>%
+  dplyr::filter(filename == "Specimen_001_cd45_005.fcs")
+
+HLA_DR_sc <- sc_gated_df_test %>%
+  clean_sc_after_gate() %>%
+  dplyr::filter(filename == "Specimen_001_hla-dr_002.fcs")
+
+
+```
+
+I can no longer use 'quantile` for the data because the single color beads have both positive and negative values. I will try to use OpenCyto to find the minimum density between two peaks. The problem I may encounter is that I need to pull out the x-axis value for the OpenCyto threshold.
+
+
+sc images
+```{r fig.width = 9, fig.height=5, warning=FALSE}
+
+p1 <-  ggplot(HLA_DR_sc, aes(x = HLA_DR, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(HLA_DR_sc, "HLA_DR")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p2 <- ggplot(CD19_sc, aes(x = CD19, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(CD19_sc, "CD19"))+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p3 <- ggplot(CD3_sc, aes(x = CD3, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3"))+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p4 <- ggplot(CD45_sc, aes(x = CD45, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(CD45_sc, "CD45"))+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p5 <- ggplot(CD27_sc, aes(x = CD27, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(CD27_sc, "CD27"))+
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+grid.arrange(p1, p2, p3, p4, p5, 
+             nrow = 2)
+```
+
+
+```{r}
+fcsFile <- list.files("../Data/flow/Colombia/", 
+                       pattern = ".fcs", full = TRUE)
+
+# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+ncfs <- read.ncdfFlowSet(fcsFile) 
+
+# apply gating set
+gs <- GatingSet(ncfs)
+
+# gate the samples
+gating(initial_gate, gs)
+
+# View the gates
+plotGate(gs[[1]])
+
+# Pull out the data
+gated_data <- getData(gs, "leukocytes") %>% 
+  as.flowSet() 
+
+
+```
+
+
+
+```{r}
+
+all_gated_df = data.frame()
+
+for (i in 1:length(gated_data)) {
+   lgcl_data <- estimateLogicle(gated_data[[i]], channels = c( "FITC-A", "PE-A",
+                                                 "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
+  
+   gated_data_test <- transform(gated_data[[i]], lgcl)%>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(gated_data[i])) 
+
+  all_gated_df <- rbind(all_gated_df, gated_data_test)
+}
+
+
+all_gated <- all_gated_df %>%
+  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
+  select(ends_with(".A"), -`FSC.A`, filename) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A")  %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
+  mutate(HLA_DR = cut(HLA_DR, breaks = c(min(HLA_DR), gate_mindensity_amy(HLA_DR_sc, "HLA_DR"), max(HLA_DR)), 
+                       labels = c("0", "1")),
+         CD19 = cut(CD19, breaks = c(min(CD19), gate_mindensity_amy(CD19_sc, "CD19"), max(CD19)),
+                       labels = c(0, 1)),
+         CD3 = cut(CD3, breaks = c(min(CD3), gate_mindensity_amy(CD3_sc, "CD3"), max(CD3)),
+                       labels = c(0, 1)),
+         CD45 = cut(CD45, breaks = c(min(CD45), gate_mindensity_amy(CD45_sc, "CD45"),  max(CD45)), 
+                    labels = c(0, 1)),
+         CD27 = cut(CD27, breaks = c(min(CD27), gate_mindensity_amy(CD27_sc, "CD27"), max(CD27)), 
+                    labels = c(0, 1))) %>%
+  mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
+  select(-`SSC.A`) %>%
+  group_by(HLA_DR, CD19, CD3, CD45, CD27, filename) %>%
+  dplyr::mutate(cell_no = n()) %>%
+  unique() %>%
+  ungroup() %>%
+  dplyr::group_by(filename) %>%
+  dplyr::mutate(total_count_by_file = sum(cell_no),
+         percentage = (100*cell_no / total_count_by_file)) %>%
+  mutate_if(is.factor, ~as.numeric.factor(.)) %>%
+  ungroup() 
+```
+
+Look at Phenotypes
+
+```{r}
+# to view all of the possible combinations
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+
+total_phenotypes <- all_gated %>%
+  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(HLA_DR, CD19, CD3, CD45, CD27) %>%
+  unique() %>%
+  ungroup() %>%
+ select(CD45, CD3, CD19, HLA_DR, CD27)
+ # mutate_all(~as.numeric.factor(.))
+
+  
+pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, 
+           main ="All Colombia Populations")
+
+nrow(total_phenotypes) 
+
+# view the specific cell phenotypes and percentages
+
+sample_populations <- all_gated %>%
+  dplyr::filter(CD45 == 1) %>%
+  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(CD45, CD3, CD19, HLA_DR, CD27) %>%
+  unique() %>%
+  ungroup() %>%
+  mutate(population = paste0("Pop", 1:length(CD45)))
+
+
+
+# Split populations based on T or B cells
+my_colors <- list(lineage = c(`T cell` = "darkorchid1", `B cell` = "#F8766D",
+                `CD3+ B cells` = "#00B0F6", `Other Luekocyte` = "yellow"))
+
+
+test_rearrange <- sample_populations %>%
+  arrange(CD3, CD19) %>%
+  mutate(population = paste0("Pop", c(1:nrow(sample_populations)))) %>%
+  column_to_rownames("population") 
+  #mutate_all(~as.numeric.factor(.)) %>%
+  
+  
+  
+annotation <- test_rearrange %>%
+  mutate(lineage = ifelse(CD3 == 1 & CD19 == 0 , "T cell",
+                          ifelse(CD3 == 0 & CD19 == 1, "B cell", 
+                                 ifelse(CD3 == 1 & CD19 == 1, "CD3+ B cells", "Other Luekocyte")))) %>%
+  select(lineage) %>%
+  mutate(population = paste0("Pop", c(1:nrow(sample_populations)))) %>%
+  mutate(lineage = as.factor(lineage)) %>%
+  column_to_rownames("population")
+  
+pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
+           labels_row = rownames(annotation), 
+           annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
+           cellwidth = 15, cellheight = 15, angle_col = 45,
+           main = "Leukocytes")
+
+
+```
+
+
+
+Correlation Plot
+- cannot do because only have 1 sample
+```{r}
+
+test_rearrange <- test_rearrange %>%
+  rownames_to_column("population")
+
+
+sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
+  select(population, percentage, -filename) %>%
+  mutate_all(funs(replace_na(., 0)))
+
+
+cor_attempt <- sample_populations_all_groups %>%
+  mutate(population= str_replace(population, "Pop", "")) %>%
+  spread(key = population, value = percentage)
+
+
+corr <- round(cor(cor_attempt), 1)
+
+#superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations", grid.hline = FALSE, grid.vline = FALSE)
+```
+
+Percentage of Cells
+
+```{r}
+ggplot(sample_populations_all_groups, aes(x = factor(population, 
+                                                     levels = c(paste0("Pop", 1:nrow(sample_populations_all_groups)))), 
+                                          y = percentage, fill = "pink")) +
+  geom_bar(stat = "identity") +
+  xlab("Populations") +
+  ylab("Percent of Cells") +
+  ggtitle("Cell Percentage of Total Live Leukocytes") +
+  scale_color_manual(values = viridis_colors) +
+  theme_gray() +
+  theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20),
+        legend.position = "none")
+```
+
+Test all_gated to get accurate pops
+```{r}
+manual_gating <- read_xlsx("../Data/flow/Colombia/manual_gating.xlsx") %>%
+  dplyr::rename(`population` = "..1",
+                percent_manual = "Manual percent") %>%
+  na.omit()
+
+
+sample_populations_all_groups <- sample_populations_all_groups %>%
+  dplyr::rename(percent_pipeline = percentage)
+
+library(kableExtra)
+# should add absolute value of the percent_pipeline-percent_manual for error (abs)
+
+comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population")) %>%
+  mutate(difference = round(percent_pipeline - percent_manual, digits = 2)) %>%
+  mutate(error = round(100*(percent_pipeline - percent_manual)/percent_manual, digits = 2)) %>%
+  mutate(percent_manual = round(percent_manual, digits = 2),
+         percent_pipeline = round(percent_pipeline, digits = 2)) %>%
+  mutate(absolute_difference = abs(difference),
+         average_difference = mean(absolute_difference)) %>%
+  select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
+
+comparison[1:15,] %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  print()
+
+
+ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  ggtitle("Colombia Data: Manual vs. Pipeline Percentage") +
+  xlab("Pipeline Percent") +
+  ylab("Manual Percent") +
+  theme_classic()
+```
