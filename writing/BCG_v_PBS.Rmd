@@ -32,6 +32,7 @@ library(tidyverse)
 library(scales)
 library(viridis)
 library(superheat)
+library(kableExtra)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -943,8 +944,9 @@ Data visualization
 
 - time series
 
-```{r fig.width = 2, fig.height= 1.5}
+```{r fig.width = 6, fig.height= 3}
 
+# take the data for filtered populations and rename so that plots are pretty
 pops_for_plots_average <- sample_populations_all_groups %>%
   separate(filename, into = c("Timepoint", "Mouse", "Group", "Number"), sep = "_") %>%
   dplyr::group_by(population, Timepoint, Group) %>%
@@ -958,17 +960,18 @@ pops_for_plots_average <- sample_populations_all_groups %>%
          Timepoint = str_replace(Timepoint, "D60", "60"),
          Timepoint = str_replace(Timepoint, "D90", "90"))
 
+# convert populations to factor to put in order for the plot
 pops_for_plots_average$population <-  factor(pops_for_plots_average$population, 
                                     levels = paste0("Pop", c(1:length(unique(pops_for_plots_average$population)))))
 
 
-viridis_colorss <- c("#3F4788FF", "#56C667FF")
+
 
 ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
                                  y = average_percent, group = Group, color = Group)) +
   geom_point() +
   geom_line() +
-  facet_wrap("population", scales = "free", ncol = 10) +
+  facet_wrap("population", scales = "free", ncol = 9) +
   xlab("Days Post-Infection") +
   ylab("Average Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
@@ -988,13 +991,14 @@ Data Visualization
 
 - CFU Correlation
 
-```{r}
-# CFU correlation plots
+```{r fig.width = 6, fig.height= 3}
 
+# read in the CFU data
 CFUs <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
   dplyr::filter(Organ == "Lung") %>%
   dplyr::filter(Group == "Group1" | Group == "Group2")
 
+# clean the flow data and prepare to join with CFU
 pops_for_CFUs <- sample_populations_all_groups %>%
   separate(filename, into = c("Timepoint", "Mouse", "Group", "Number"), sep = "_") %>%
   dplyr::mutate(Timepoint = str_replace(Timepoint, "D", "")) %>%
@@ -1002,9 +1006,10 @@ pops_for_CFUs <- sample_populations_all_groups %>%
   unite(Group, c(Mouse, Group)) %>%
   dplyr::mutate(Group = str_replace(Group, "_", "")) 
 
+# join together the CFU data and the population data
 pops_CFUs <- inner_join(pops_for_CFUs, CFUs, by = c("Group", "Number", "Timepoint")) 
 
-#  use to put in order for the plot
+#  convert populations to factor to put in order for the plot
 pops_CFUs$population <-  factor(pops_CFUs$population, 
                                     levels = paste0("Pop", c(1:length(unique(pops_CFUs$population)))))
 
@@ -1023,78 +1028,6 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
 ```
 
 
-Check for outliers in the linear plot
-```{r}
-
-pops_CFUs_PBS <- pops_CFUs %>%
-  dplyr::filter(Group == "Group1") 
-  
-
-pops_CFUs_BCG <- pops_CFUs %>%
-  dplyr::filter(Group == "Group2") 
-  
-
-
-ggplot(pops_CFUs_PBS, aes(percentage, CFU, color = Number)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 10) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ggtitle("PBS Outliers?") 
-
-
-ggplot(pops_CFUs_BCG, aes(percentage, CFU, color = Number)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 10) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ggtitle("BCG Outliers?") 
-
-pops_CFUs_D30_PBS <- pops_CFUs %>%
-  dplyr::filter(Group == "Group1" & Timepoint == "30") 
-
-ggplot(pops_CFUs_D30_PBS, aes(percentage, CFU, color = Number)) +
-  geom_point(size =4) +
-  facet_wrap(~population, scales = "free_x", ncol = 11) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ggtitle("D30 PBS Outlier") 
-
-ggplot(pops_CFUs_D30_PBS, aes(Number, percentage, fill = Number)) +
-  geom_bar(stat  = "identity") +
-  facet_wrap(~population, scales = "free_y", ncol = 11)
-```
-
-
-Want to add additional column for Resident
-```{r}
-
-
-
-
-# for presentation
-  pheatmap(add_annot_CD8[1, 3:21], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", 42), 
-         annotation_row = named_annot_CD8_combine,  annotation_colors = my_colors, color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
-           main = "Cytotoxic T cells (CD4- CD8+)")
-  
-  pheatmap(add_annot_dn[4, 3:22], cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", 4), annotation_row = named_annot_dn_combine,  
-           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors, color = viridis_colors,
-           main = "Double Negative Immune Cells (CD4-CD8-)")
-
-  
-```
-
-
-Add breaks to the heatmaps
-
-removed double positive ,  from rbind and ,  from second bind
-
-
-```{r}
-
-```
 Explore Pop 3
 
 ```{r}
@@ -1119,7 +1052,7 @@ pipeline_pop3 <- pops_CFUs %>%
   select(-Organ, -CFU) %>%
   dplyr::rename(percent_pipeline = percentage)
 
-library(kableExtra)
+
 # should add absolute value of the percent_pipeline-percent_manual for error (abs)
 
 comparison <- full_join(manual_gating_pop3, pipeline_pop3, by = c("Timepoint", "Group", "Number", "population")) %>%
