@@ -198,6 +198,7 @@ phenotype_heatmap <- function(csv_file, population_no, title) {
 
 
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+
 ```
 
 Initial gating of FMOs
@@ -780,26 +781,10 @@ all_gated <- all_gated_df %>%
 
 Data visualization
 
-We first want to 
-Explore the data 
-For example, we only want to look at CD3+ cells
+We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD3+ cells that constitute >0.5% of total live leukocytes in a sample.
 
 ```{r}
-# view the cell phenotypes
-sample_populations <- all_gated %>%
-  dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
-  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
-  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
-           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
-           TNF) %>%
-  unique() %>%
-  ungroup() %>%
-  mutate(population = paste0("Pop", 1:length(CD3)))
-
 # to view all of the possible combinations
-
-as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
-
 total_phenotypes <- all_gated %>%
     select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
   group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17,  CTLA4, CD27, 
@@ -810,12 +795,23 @@ total_phenotypes <- all_gated %>%
  select(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
   mutate_all(~as.numeric.factor(.))
 
-  
 pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
          color = viridis_colors, show_rownames = FALSE,
            main ="All Lung Populations")
 
+# gives the total number of populations
 nrow(total_phenotypes) 
+
+# view the specific cell phenotypes we're interested in
+sample_populations <- all_gated %>%
+  dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
+  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF) %>%
+  unique() %>%
+  ungroup() %>%
+  mutate(population = paste0("Pop", 1:length(CD3)))
 
 # view the percentage of cells in each population
 
