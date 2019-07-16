@@ -74,16 +74,8 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
 # geom_hline(yintercept = 0.38, linetype = "dotted") +
 
 ```
-Only want the lung samples
 
-+
-  theme(plot.background = element_rect(fill = "black"),
-        legend.title = element_text(color = "white"),
-        legend.text = element_text(color = "white"),
-        axis.title = element_text(color = "white"),
-        axis.text = element_text(color = "white"),
-        axis.ticks = element_line(color = "white"),
-        legend.background = element_rect(fill = "black"))
+Only want the lung samples
 
 ```{r fig.width = 3, fig.height = 1.2}
 
@@ -114,13 +106,9 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
   rotate_x_text(45)  +
   scale_color_manual(values = viridis_colors) 
 
-
-
-
 ```
+
 Testing mean_se
-
-
 ```{r fig.width = 3, fig.height = 1.2}
 # mean_se
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
@@ -198,93 +186,5 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
   scale_color_manual(values = viridis_colors) 
 ```
 
-All CFUs
-```{r}
-smeg_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
-  rename(Day = Timepoint) %>%
-  group_by(Organ, Day) %>%
-  mutate(Group = replace(Group, Group == "Group1", "PBS")) %>%
-  mutate(Group = replace(Group, Group == "Group2", "BCG")) %>%
-  mutate(Group = replace(Group, Group == "Group3", "smegmatis")) %>%
-  mutate(Group = replace(Group, Group == "Group4", "BCG + smegmatis")) %>% 
-  mutate(Group = factor(Group, levels = c("PBS", "BCG", "smegmatis", "BCG + smegmatis"))) 
 
-smeg_aov_tukey <- smeg_CFU  %>%
-  nest() %>%
-  mutate(aov_result = map(data, ~aov(CFU ~ Group, data = .x)),
-         tukey_result = map(aov_result, TukeyHSD),
-         tidy_tukey = map(tukey_result, tidy)) %>%
-  unnest(tidy_tukey, .drop = TRUE)
-
-smeg_signif_data <- smeg_aov_tukey %>%
-  dplyr::filter(adj.p.value <0.05) %>%
-    separate(col = comparison, into = c("group1", "group2"), 
-           sep = "-") %>%
-  mutate(rounded = round(adj.p.value, digits = 4)) 
-
-smeg_signif_data <- smeg_signif_data %>%
-  mutate(star = rep("*", nrow(smeg_signif_data))) 
-
-
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("mean_se", "jitter"), data = smeg_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap(c("Organ", "Day"), ncol = length(unique(smeg_CFU$Day)), 
-             labeller = label_both) + 
-  stat_pvalue_manual(data = smeg_signif_data, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5, 6.8, 7.2)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  theme_bw() +
-  rotate_x_text(45)
-```
-
-All samples
-
-```{r}
-smeg_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
-  rename(Day = Timepoint) %>%
-  group_by(Organ, Day) %>%
-  mutate(Group = replace(Group, Group == "Group1", "PBS")) %>%
-  mutate(Group = replace(Group, Group == "Group2", "BCG")) %>%
-  mutate(Group = replace(Group, Group == "Group3", "smegmatis")) %>%
-  mutate(Group = replace(Group, Group == "Group4", "BCG + smegmatis")) %>% 
-  mutate(Group = factor(Group, levels = c("PBS", "BCG", "smegmatis", "BCG + smegmatis")))
-
-
-smeg_aov_tukey <- smeg_CFU  %>%
-  nest() %>%
-  mutate(aov_result = map(data, ~aov(CFU ~ Group, data = .x)),
-         tukey_result = map(aov_result, TukeyHSD),
-         tidy_tukey = map(tukey_result, tidy)) %>%
-  unnest(tidy_tukey, .drop = TRUE)
-
-smeg_signif_data <- smeg_aov_tukey %>%
-  dplyr::filter(adj.p.value <0.05) %>%
-    separate(col = comparison, into = c("group1", "group2"), 
-           sep = "-") %>%
-  mutate(rounded = round(adj.p.value, digits = 4)) 
-
-smeg_signif_data <- smeg_signif_data %>%
-  mutate(star = rep("*", nrow(smeg_signif_data))) 
-
-
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("mean_se", "jitter"), data = smeg_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap(c("Organ", "Day"), ncol = length(unique(smeg_CFU$Day)), 
-             labeller = label_both) + 
-  stat_pvalue_manual(data = smeg_signif_data, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5, 6.8, 7.2)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  theme_bw() +
-  rotate_x_text(45)
-```
 
