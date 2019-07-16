@@ -192,10 +192,10 @@ StatSmoothFunc <- ggproto("StatSmooth", Stat,
 viridis_colors <- c("#3F4788FF", "#56C667FF")
 
 phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, color = viridis_colors,
+  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, 
+           color = viridis_colors, cellwidth = 15, cellheight = 15,
            labels_row = paste("Pop", population_no), main = title)
 }
-
 
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 
@@ -834,11 +834,7 @@ Split the data into CD3+CD4+CD8- CD3+CD4-CD8+, double negative (CD4-CD8-), and d
 Maybe splitting isn't the best way to do it - I could `select` by the CD4 and CD8 instead
 ```{r fig.width = 9, fig.height = 8}
 
-phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE,
-           labels_row = paste("Pop", population_no), cellwidth = 15, cellheight = 15, 
-           main = title)
-}
+
 # this was originally in the test_rearrangem but now don't need  mutate_all(~as.numeric.factor(.)) 
 # also don't need `as.numeric.factor`
 test_rearrange <- sample_populations %>%
