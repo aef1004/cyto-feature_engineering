@@ -196,20 +196,23 @@ phenotype_heatmap <- function(csv_file, population_no, title) {
            labels_row = paste("Pop", population_no), main = title)
 }
 
-#
+
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
+Initial gating of FMOs
 ```{r}
 
-ws <- list.files("../Data/flow/", pattern = "AmyGating_intracellular.csv", full = TRUE)
+# read in the gating strategy
+ws <- list.files("../Data/flow/BCG_v_PBS", pattern = "AmyGating_intracellular.csv", full = TRUE)
 
 # only for viewing that read in 
 dtTemplate <- fread(ws, autostart = 1L) 
 
 initial_gate <- gatingTemplate(ws, autostart = 1L) 
 
-FMO_fcsFiles <- list.files("../Data/flow/Tcell/FMOs", 
+# read in the FMOs
+FMO_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -228,8 +231,11 @@ plotGate(gs_FMO[[1]])
 FMO_gated_data <- getData(gs_FMO, "live") %>% 
   as.flowSet() 
 
+#initialize dataframe where all data will go
 FMO_gated_df = data.frame()
 
+# convert each of the FMO files to a data frame, adding on the filename
+# bind all of the FMO files into one dataframe
 for (i in 1:length(FMO_gated_data)) {
   FMO_data <- FMO_gated_data[[i]] %>%
     exprs() %>%
@@ -239,11 +245,12 @@ for (i in 1:length(FMO_gated_data)) {
   FMO_gated_df <- rbind(FMO_gated_df, FMO_data)
 }
 
+# confirm that all of the files were read in correctly
 unique(FMO_gated_df$filename)
 
+# I accidently got CD4 into the CD4 FMO, so I had to redo it. I also tried CD69 to see if it was experiment-dependent, but CD69 problems are due to spillover
+
 # Add in the updated FMOS
-
-
 FMO_fcsFiles_redo <- list.files("../Data/flow/Tcell/FMOs/June6_Redo", 
                        pattern = ".fcs", full = TRUE)
 
@@ -270,22 +277,20 @@ for (i in 1:length(FMO_gated_data_redo)) {
   FMO_gated_df_redo <- rbind(FMO_gated_df_redo, FMO_data_redo)
 }
 
+# when I redid the FMOs, I used lowercase for naming Zombie, so must convert to uppercase to match the previous samples
 FMO_gated_df_redo <- FMO_gated_df_redo %>%
   select(-SSC.B.H, - SSC.B.A) %>%
   dplyr::rename("Zombie.NIR.A" = "Zombie.Nir.A",
          "Zombie.NIR.H" = "Zombie.Nir.H")
 
-
+# combine the new and old FMOs
 FMO_gated_df <- rbind(FMO_gated_df, FMO_gated_df_redo)
 
 plotGate(gs_FMO[[3]])
 
-
-
-
 ```
 
-Pull out FMOS
+Pull out the individual FMOS
 ```{r}
 
 CD3_FMO <- FMO_gated_df %>%
