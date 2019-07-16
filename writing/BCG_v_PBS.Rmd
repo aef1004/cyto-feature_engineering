@@ -1032,7 +1032,7 @@ Confirm pipeline populations with manual gating
 ```{r}
 
 # read in and clean manual gating percentage data
-manual_gating_pop3 <- read_xlsx("../Data/BCG_v_PBS/manual_gating_pop3.xlsx") %>%
+manual_gating_pop3 <- read_xlsx("../Data/flow/BCG_v_PBS/manual_gating_pop3.xlsx") %>%
   dplyr::rename(`Sample` = "Sample:",
          live_leuk = "Singlets/Leukocytes/Live | Count",
          pop3 = "Singlets/Leukocytes/Live/CD3+/CD44+/Sca1+/IFN+/CD4-/CD8-/CD27-/CD28-/CD62L-/CD103-/CD122-/CD153-/CTLA4-/IL10-/IL17-/KLRG1-/PD1-/TNF- | Count",
@@ -1066,6 +1066,7 @@ comparison <- full_join(manual_gating_pop3, pipeline_pop3, by = c("Timepoint", "
     select(population, Timepoint, Group, Number, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
+
 comparison %>%
   kable() %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
