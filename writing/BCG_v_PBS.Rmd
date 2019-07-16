@@ -843,7 +843,11 @@ based on expression of different markers. The phenotype plot is then arranged by
 ```{r}
 
 # these are the colors I want for the pheatmap annotations
-my_colors <- list(cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
+my_colors <- list(lineage = c(`Double Negative` = "darkturquoise", 
+                              `T Helper` = "plum3",
+                              `Cytotoxic T` = "hotpink",
+                              `Double Positive` = "orange"),
+                  cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
                 `TSCM` = "#00B0F6", `Unknown` = "yellow"),
                 resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
 
@@ -914,7 +918,6 @@ Data Visualization
 
  - Population correlation Plot
 
-Removed : , add_annot_dp from rbind
 ```{r fig.height = 4, fig.width = 4}
 
 # correlation plot without the name "pop"
@@ -927,28 +930,20 @@ corr <- sample_populations_all_groups %>%
 corr <- round(cor(corr), 1)
 
 # plot the population correlation plot separated by the lineages
-superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)), left.label.col = c(rep("pink", 18), rep("light blue", 14), rep("orange", 8), rep("orchid3", 1)))
+superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)))
 
 # creates a legend for the superheat correlation plot
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-legend("topleft", legend =c("Double Negative", "T helper", "Cytotoxic T", "Double Positive"), pch=16, pt.cex=3, cex=1.5, bty='n',col = c("pink", "light blue", "orange", "orchid3"))
+legend("topleft", legend =c("Double Negative", "T helper", "Cytotoxic T", "Double Positive"), pch=16, pt.cex=3, cex=1.5, bty='n',col = c("darkturquoise", "plum3", "hotpink", "orange"))
 mtext("Cell Lineage", at=0.2, cex=2)
 
-
 ```
-
-
-
 
 Data visualization
 
 - time series
-- CFU correlation
 
 ```{r fig.width = 2, fig.height= 1.5}
-
-# time series
-# CFU correlation
 
 pops_for_plots_average <- sample_populations_all_groups %>%
   separate(filename, into = c("Timepoint", "Mouse", "Group", "Number"), sep = "_") %>%
@@ -966,8 +961,6 @@ pops_for_plots_average <- sample_populations_all_groups %>%
 pops_for_plots_average$population <-  factor(pops_for_plots_average$population, 
                                     levels = paste0("Pop", c(1:length(unique(pops_for_plots_average$population)))))
 
-
-show_col(viridis_pal()(20))
 
 viridis_colorss <- c("#3F4788FF", "#56C667FF")
 
@@ -989,6 +982,13 @@ ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", 
         legend.text = element_text(size=18),
         legend.key.size = unit(1.5, "line"))
 
+```
+
+Data Visualization
+
+- CFU Correlation
+
+```{r}
 # CFU correlation plots
 
 CFUs <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
@@ -1020,35 +1020,7 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
-
-
-# plot specific plots
-pops_CFUs %>%
-  dplyr::filter(population == "Pop36") %>%
-  ggplot(aes(percentage, CFU)) +
-  geom_point(color = "#56C667FF", size = 5) +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ggtitle("Pop 36") +
-  theme(axis.text = element_text(size = 12))
-
-
-pops_for_plots_average %>%
-  dplyr::filter(population == "Pop36") %>%
-  ggplot(aes(x = factor(Timepoint, levels = c("30", "60", "90")),
-                                 y = average_percent, group = Group, color = Group)) +
-  geom_point(size = 5) +
-  geom_line(size = 2) +
-  xlab("Days Post-Infection") +
-  ylab("Average Percent of Cells") +
-  ggtitle("Pop 36") +
-  theme(axis.text = element_text(size = 20),
-        strip.text.x = element_text(size = 18),
-        title = element_text(size = 45)) +
-  scale_color_manual(values = viridis_colors) +
-  theme_gray()
 ```
-
 
 
 Check for outliers in the linear plot
