@@ -35,44 +35,15 @@ library(viridis)
 
 I have created a few functions to make it easier to analyze the data.
 
-- clean_FCS: converts FCS files to a data frame and renames the columns; it also removes SSC boundary effects
-- clean_gated: the performs most of the same functions as clean_FCS, but it takes in files that are already read in and gated
+- clean_FMO_after_gate:renames the columns; it also removes SSC boundary effects
 - statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
 - stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
 - phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
+- as.numeric.factor: convert the factors for the marker names into numeric for plotting
 ```{r}
 
-clean_FCS <- function(fcs_file) {
-  read.FCS(fcs_file) %>%
-  exprs() %>%
-  data.frame() %>%
-  select(ends_with(".A"), -`FSC.A`) %>%
-  dplyr::rename(`FoxP3` = "APC.A",
-         `CD44` = "APC.Fire.750.A",
-        `CD103` =  "APC.R700.A",       
-         `CD3` = "Alexa.Fluor.532.A",
-         `Sca1` = "BB515.A",
-         `IL_10` = "BV421.A",
-         `CD4` = "BV480.A",
-         `CD69` = "BV510.A",
-         `CD8` = "BV570.A", 
-         `CTLA4` = "BV605.A",
-         `CD27` = "BV650.A",
-         `CD153` = "BV711.A",
-         `KLRG1` = "BV785.A",
-         `IL_17` = "PE.A",
-         `CD122` = "PE.Cy5.A",
-         `IFN` = "PE.Cy7.A", 
-         `CD62L` = "PE.Dazzle594.A",
-         `TNF` = "Pacific.Blue.A", 
-         `CD28` = "PE.Cy5.5.A",
-         `PD1` = "PerCP.eFluor.710.A")  %>%
-  na.omit() %>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
-}
-
-clean_FMO_after_gate <- function(fcs_file) {
-  fcs_file %>%
+clean_FMO_after_gate <- function(FMO_df) {
+  FMO_df %>%
   select(ends_with(".A"), -`FSC.A`, `SSC.A`, filename) %>%
   dplyr::rename(`FoxP3` = "APC.A",
          `CD44` = "APC.Fire.750.A",
@@ -97,35 +68,6 @@ clean_FMO_after_gate <- function(fcs_file) {
    na.omit()%>%
   dplyr::filter(`SSC.A` != max(`SSC.A`))
 
-}
-
-
-clean_gated <- function(file) {
-  exprs(file) %>%
-  data.frame() %>%
-  select(ends_with(".A"), -`FSC.A`) %>%
-  dplyr::rename(`FoxP3` = "APC.A",
-         `CD44` = "APC.Fire.750.A",
-        `CD103` =  "APC.R700.A",       
-         `CD3` = "Alexa.Fluor.532.A",
-         `Sca1` = "BB515.A",
-         `IL_10` = "BV421.A",
-         `CD4` = "BV480.A",
-         `CD69` = "BV510.A",
-         `CD8` = "BV570.A", 
-         `CTLA4` = "BV605.A",
-         `CD27` = "BV650.A",
-         `CD153` = "BV711.A",
-         `KLRG1` = "BV785.A",
-         `IL_17` = "PE.A",
-         `CD122` = "PE.Cy5.A",
-         `IFN` = "PE.Cy7.A", 
-         `CD62L` = "PE.Dazzle594.A",
-         `TNF` = "Pacific.Blue.A", 
-         `CD28` = "PE.Cy5.5.A",
-         `PD1` = "PerCP.eFluor.710.A") %>%
-  na.omit()%>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
 }
 
 
@@ -249,19 +191,12 @@ StatSmoothFunc <- ggproto("StatSmooth", Stat,
 
 viridis_colors <- c("#3F4788FF", "#56C667FF")
 
-# don't remember which is the right one - test later
 phenotype_heatmap <- function(csv_file, population_no, title) {
   pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, color = viridis_colors,
            labels_row = paste("Pop", population_no), main = title)
 }
 
-phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, 
-           color = colorRampPalette(viridis_colorss)(length(seq(0, 1))),
-           labels_row = paste("Pop", population_no), main = title)
-}
-
-# need to convert the factors in the extracted_pheno to numeric for plotting
+#
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
