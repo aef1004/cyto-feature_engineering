@@ -1,3 +1,5 @@
 ﻿alias,pop,parent,dims,gating_method,gating_args,collapseDataForGating,groupBy,preprocessing_method,preprocessing_args
 singlets,+,root,"FSC-A,FSC-H",singletGate,wider_gate=TRUE,,,,
 live,-,singlets,Zombie Nir-A,mindensity,"gate_range=c(5e4,1e5)",,,,
+RBC_neg,-,live,APC-A,mindensity,,,,,
+Leukoctyes,+,RBC_neg,BV570-A,mindensity,,,,,

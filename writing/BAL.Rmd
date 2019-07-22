@@ -3,6 +3,8 @@ title: "BAL"
 output: html_document
 ---
 
+The data is from BAL Extraction 5-29-19. 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -362,6 +364,10 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
 The single color (sc) samples are read in and initially gated on singlets and leukocytes (there is no live/dead dye in this panel).
+
+The samples are gated on singlets, live, Ter119- (RBCs), and CD45+ (Leukoctyes).
+
+Note: The last gate (Leukocytes) should be ~8% positive rather than 2.5%
 ```{r}
 
 # read in the gating strategy
@@ -387,7 +393,7 @@ gs <- GatingSet(ncfs)
 gating(initial_gate, gs)
 
 # View the gates
-plotGate(gs[[1]])
+plotGate(gs[[1]], strip.text = "gate")
 
 # Pull out the gated data
 gated_data <- getData(gs, "live") %>% 
@@ -421,3 +427,151 @@ unique(gated_df_test$filename)
 gated_df_test <- gated_df_test %>%
   clean_after_gate()
 ```
+
+
+```{r}
+
+
+
+
+ggplot(gated_df_test, aes(x = CD326, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD326")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD3, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD3")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD4, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD4")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD8, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD8")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = NK1.1, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "NK1.1")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = GD_TCR, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "GD_TCR")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD19, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+  xlim(-10000, 200000) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD41, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD41")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD11B, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD11B")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CD11C, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CD11C")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = Ly6C, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "Ly6C")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = Ly6G, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "Ly6G")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = MHCII, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "MHCII")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+ggplot(gated_df_test, aes(x = CCR2, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+  xlim(-10000, 200000) +
+   geom_vline(xintercept = gate_mindensity_amy(gated_df_test, "CCR2")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+```
+
