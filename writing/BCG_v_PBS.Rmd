@@ -872,7 +872,7 @@ phenotype_data <- sample_populations %>%
   column_to_rownames("population")
 
 # create an annotated data frame to add to pheatmap
-phenotype_annot <- tester123 %>%
+phenotype_annot <- phenotype_data %>%
   select(resident, cell, lineage) %>%
   mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
@@ -912,7 +912,7 @@ sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   mutate_all(funs(replace_na(., 0))) 
 
 # confirm that the populations were added correctly
-unique(annot_all$population)
+unique(sample_populations_all_groups$population)
 
 ```
 
