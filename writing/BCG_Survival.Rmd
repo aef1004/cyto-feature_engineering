@@ -613,10 +613,9 @@ Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all
 ```{r}
 
 all_gated <- all_gated_df %>%
-  dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
-  mutate(Time = str_extract(filename, "D[0-9]*")) %>%
-  mutate(Group = str_extract(filename, "Group\\s[0-9]\\s[A-Z]")) %>%
-  unite(filename, c("Time", "Group")) %>%
+  mutate(Time_Group = str_extract(filename, "D[0-9]*\\s[A-Z][A-Z]\\w")) %>%
+  mutate(Organ_Vaccination_Number = str_extract(filename, "Spleen\\s[A-Z][A-Z][A-Z]\\s[A-Z]")) %>%
+  unite(filename, c("Time_Group", "Organ_Vaccination_Number")) %>%
   mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
   select(ends_with(".A"), -`FSC.A`, filename) %>%
   dplyr::rename(`CXCR3` = "APC.A",
@@ -684,9 +683,8 @@ all_gated <- all_gated_df %>%
                                          max(CD28)), labels = c(0, 1))) %>%
   select(-Zombie.Nir.A, -AF.A, -SSC.A) %>%
   mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
-  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, CCR7, CTLA4, CD27, 
-           CD153, KLRG1,  CD122, PD1, CD62L,  CD28, CXCR1, CXCR3, CXCR5,
-            filename) %>%
+  group_by(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
+        KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5, filename) %>%
   dplyr::mutate(cell_no = n()) %>%
   unique() %>%
   ungroup() %>%
@@ -695,4 +693,254 @@ all_gated <- all_gated_df %>%
          percentage = (100*cell_no / total_count_by_file)) %>%
   ungroup() 
 
+
+
+  
+```
+
+Data visualization
+
+We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD3+ cells that constitute >0.5% of total live leukocytes in a sample.
+
+```{r}
+# to view all of the possible combinations
+total_phenotypes <- all_gated %>%
+    select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
+        KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5) %>%
+  unique() %>%
+  ungroup() %>%
+ select(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
+        KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5) %>%
+  mutate_all(~as.numeric.factor(.))
+
+pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, show_rownames = FALSE,
+           main ="All Lung Populations")
+
+# gives the total number of populations
+nrow(total_phenotypes) 
+
+# view the specific cell phenotypes we're interested in
+sample_populations <- all_gated %>%
+  dplyr::filter(CD3 == 1 & percentage > 0.3) %>%
+  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
+        KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5) %>%
+  unique() %>%
+  ungroup() %>%
+  mutate(population = paste0("Pop", 1:length(CD3)))
+
+# add in the percentage of cells in each specific population after the filter
+test <- left_join(sample_populations, all_gated)
+
+# expand to add in the data where a mouse may have 0 cells in a certain population identified after the filter
+all_options <- expand(test, population, filename)
+
+# add in the population information
+add_pops <- left_join(all_options, sample_populations)
+
+# add populations to the original gated data and replace NA percentages with 0
+sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
+  select(population, filename, percentage) %>%
+  mutate_all(funs(replace_na(., 0)))
+
+
+```
+
+Want to add annotations to the phenotype plot
+
+- lineage
+- cell
+- resident
+
+based on expression of different markers. The phenotype plot is then arranged by lineage, cell and resident cells and split by the lineage (I should try to find a way to do this automatically).
+
+```{r}
+# these are the colors I want for the pheatmap annotations
+my_colors <- list(lineage = c(`Double Negative` = "darkturquoise", 
+                              `T Helper` = "plum3",
+                              `Cytotoxic T` = "hotpink",
+                              `Double Positive` = "orange"),
+                  cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
+                `TSCM` = "#00B0F6", `Naive` = "brown",`Unknown` = "yellow"),
+                resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
+
+# take the filtered data and add annotations for the differnt lineages, cell type, and resident status
+phenotype_data <- sample_populations %>%
+  mutate_all(~as.numeric.factor(.)) %>%
+      mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive")))) %>%
+  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  mutate(resident = ifelse(CD103 == 1 & CD69 == 1, "Resident", "Non-resident")) %>%
+  select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
+        KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5) %>%
+  arrange(match(lineage, c("Double Negative", "T Helper", "Cytotoxic T", "Double Positive")), cell, resident) %>%
+  mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
+  column_to_rownames("population")
+
+# create an annotated data frame to add to pheatmap
+phenotype_annot <- phenotype_data %>%
+  select(resident, cell, lineage) %>%
+  mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
+  column_to_rownames("population")
+
+# plot the data with different annotations
+pheatmap(phenotype_data[, 4:23], cluster_rows = FALSE, cluster_cols = FALSE,
+           labels_row = paste("Pop", 1:nrow(sample_populations)), 
+           annotation_row = phenotype_annot,
+           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
+         color = viridis_colors, cutree_rows = 2,
+           main = "Unique CD3+ Cells")
+```
+
+Want to get the percentages added so can plot the percentages with the new 
+
+```{r}
+# change the population rownames to column 
+phenotype_data <- phenotype_data %>%
+  rownames_to_column(var = "population")
+
+# convert the marker columns of factor class into numeric
+all_gated <- all_gated %>%
+  mutate_if(is.factor, ~as.numeric.factor(.)) 
+
+# add the percentages from original data to the populations of filtered data
+add_perc <- left_join(phenotype_data, all_gated)
+
+# expand the data so can see which files have 0 cells in a phenotype
+all_options <- expand(add_perc, population, filename)
+
+# add the populations back 
+add_pops <- left_join(all_options, phenotype_data)
+
+# add the percentages back
+sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
+  select(population, filename, percentage) %>%
+  mutate_all(funs(replace_na(., 0))) 
+
+# confirm that the populations were added correctly
+unique(annot_all$population)
+
+```
+
+
+Data Visualization
+
+ - Population correlation Plot
+
+```{r fig.height = 4, fig.width = 4}
+
+# correlation plot without the name "pop"
+corr <- sample_populations_all_groups %>%
+  mutate(population= str_replace(population, "Pop", "")) %>%
+  spread(key = population, value = percentage) %>%
+  select(-filename) %>%
+  select(c(paste0(1:nrow(phenotype_data))))
+
+corr <- round(cor(corr), 1)
+
+# plot the population correlation plot separated by the lineages
+superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)))
+
+# creates a legend for the superheat correlation plot
+plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+legend("topleft", legend =c("Double Negative", "T helper", "Cytotoxic T", "Double Positive"), pch=16, pt.cex=3, cex=1.5, bty='n',col = c("darkturquoise", "plum3", "hotpink", "orange"))
+mtext("Cell Lineage", at=0.2, cex=2)
+
+```
+
+Data visualization
+
+- time series
+
+```{r fig.width = 6, fig.height= 3}
+
+# take the data for filtered populations and rename so that plots are pretty
+pops_for_plots_average <- sample_populations_all_groups %>%
+  separate(filename, into = c("Timepoint", "Mouse", "Organ", "Vaccination", "Number"), sep = "_") %>%
+  unite(Group, c("Mouse", "Vaccination")) %>%
+  dplyr::group_by(population, Timepoint, Group) %>%
+  dplyr::mutate(average_percent = mean(percentage)) %>%
+  select(-Number, -percentage) %>%
+  ungroup() %>%
+  unique() %>%
+  dplyr::mutate(Timepoint = str_replace(Timepoint, "D30", "30"),
+         Timepoint = str_replace(Timepoint, "D90", "90"),
+         Timepoint = str_replace(Timepoint, "D160", "160"))
+
+# convert populations to factor to put in order for the plot
+pops_for_plots_average$population <-  factor(pops_for_plots_average$population, 
+                                    levels = paste0("Pop", c(1:length(unique(pops_for_plots_average$population)))))
+
+
+
+
+ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "90", "180")),
+                                 y = average_percent, group = Group, color = Group)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap("population", scales = "free", ncol = 9) +
+  xlab("Days Post-Infection") +
+  ylab("Average Percent of Cells") +
+  ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
+  scale_color_manual(values = c(viridis_colors, "pink", "yellow")) +
+  theme_gray() +
+    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20),
+        legend.text = element_text(size=18),
+        legend.key.size = unit(1.5, "line"))
+
+```
+
+
+Data Visualization
+
+- CFU Correlation
+
+```{r fig.width = 6, fig.height= 3}
+
+# read in the CFU data
+CFUs <- read_xlsx("../Data/flow/BCG_Survival/BCG_Survival_CFUs.xlsx") %>%
+  dplyr::filter(Organ == "Spleen") %>%
+  dplyr::filter(Mouse == "BL6" | Mouse == "NOS") %>%
+  rename(Group = Mouse)
+
+# clean the flow data and prepare to join with CFU
+pops_for_CFUs <- sample_populations_all_groups %>%
+  separate(filename, into = c("Timepoint", "Group", "Organ", "Vaccination", "Number"), sep = "_") %>%
+  filter(Vaccination == "BCG") %>%
+  dplyr::mutate(Timepoint = str_replace(Timepoint, "D", "")) %>%
+  dplyr::mutate(Timepoint = as.numeric(Timepoint)) %>%
+  dplyr::mutate(Group = str_replace(Group, "_", "")) %>%
+  dplyr::group_by(population, Timepoint, Group)
+
+# join together the CFU data and the population data
+pops_CFUs <- inner_join(pops_for_CFUs, CFUs, by = c("Group", "Number", "Timepoint")) 
+
+#  convert populations to factor to put in order for the plot
+pops_CFUs$population <-  factor(pops_CFUs$population, 
+                                    levels = paste0("Pop", c(1:length(unique(pops_CFUs$population)))))
+
+
+ggplot(pops_CFUs, aes(percentage, CFU)) +
+  geom_point(color = "#56C667FF") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
 ```
