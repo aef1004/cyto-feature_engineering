@@ -380,224 +380,224 @@ TNF_FMO <- FMO_gated_df %>%
 
 Feature engineering FMOs and plot
 
-```{r fig.width = 9, fig.height=5, warning=FALSE}
-
+Try messing with hexbins
+```{r fig.width = 9.5, fig.height=5, warning=FALSE}
 p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+   ylab("") +
    geom_vline(xintercept = quantile(CD3_FMO$CD3, 0.99)) +
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p2 <- ggplot(CD4_FMO, aes(x = CD4, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+   ylab("") +
    geom_vline(xintercept = quantile(CD4_FMO$CD4, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p3 <- ggplot(CD8_FMO, aes(x = CD8, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+   ylab("") +
    geom_vline(xintercept = quantile(CD8_FMO$CD8, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 # this plot is removed because we are not going to be using this marker
 p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+   ylab("") +
    geom_vline(xintercept = quantile(FoxP3_FMO$FoxP3, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p5 <- ggplot(CD27_FMO, aes(x = CD27, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD27_FMO$CD27, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p6 <- ggplot(CD28_FMO, aes(x = CD28, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD28_FMO$CD28, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p7 <- ggplot(CD44_FMO, aes(x = CD44, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD44_FMO$CD44, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p8 <- ggplot(IL_10_FMO, aes(x = IL_10, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(IL_10_FMO$IL_10, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+   ylab("") +
    geom_vline(xintercept = quantile(CD62L_FMO$CD62L, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 # this plot is removed because we are not going to be using this marker
 p10 <- ggplot(CD69_FMO, aes(x = CD69, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD69_FMO$CD69, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p11 <- ggplot(CD103_FMO, aes(x = CD103, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD103_FMO$CD103, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p12 <- ggplot(CD122_FMO, aes(x = CD122, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD122_FMO$CD122, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p13 <- ggplot(CD153_FMO, aes(x = CD153, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CD153_FMO$CD153, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p14 <- ggplot(CTLA4_FMO, aes(x = CTLA4, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(CTLA4_FMO$CTLA4, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p15 <- ggplot(IL_17_FMO, aes(x = IL_17, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(IL_17_FMO$IL_17, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p16 <- ggplot(IFN_FMO, aes(x = IFN, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(IFN_FMO$IFN, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p17 <- ggplot(TNF_FMO, aes(x = TNF, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(TNF_FMO$TNF, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
 p18 <- ggplot(KLRG1_FMO, aes(x = KLRG1, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(KLRG1_FMO$KLRG1, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p19 <- ggplot(PD1_FMO, aes(x = PD1, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(PD1_FMO$PD1, 0.99))+
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 p20 <- ggplot(Sca1_FMO, aes(x = Sca1, y = SSC.A)) +
-   geom_hex(bins = 100) +
+   geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-   xlim(-10000, 20000) +
-   ylab("SSC-A") +
+  ylab("") +
    geom_vline(xintercept = quantile(Sca1_FMO$Sca1, 0.99))+
   theme_gray() +
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+        axis.title = element_text(size = 20)) +
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-
+library(grid)
 grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
-             nrow = 3)
+             nrow = 3, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
 ```
 
 Gating the sample data
