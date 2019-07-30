@@ -355,7 +355,7 @@ The single color (sc) samples are read in and initially gated on singlets and le
 ```{r}
 
 # read in the gating strategy
-ws <- list.files("../Data/flow/Colombia", pattern = "Colombia_gating.csv", full = TRUE)
+ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
 
 # only for viewing that read in 
 dtTemplate <- fread(ws, autostart = 1L) 
@@ -363,7 +363,7 @@ dtTemplate <- fread(ws, autostart = 1L)
 initial_gate <- gatingTemplate(ws, autostart = 1L) 
 
 # read in the single color data
-sc_fcsFiles <- list.files("../Data/flow/Colombia/Single_Colors", 
+sc_fcsFiles <- list.files("../Data/flow/Human_Clinical/Single_Colors", 
                        pattern = ".fcs", full = TRUE)
 
 
@@ -504,7 +504,7 @@ grid.arrange(p1, p2, p3, p4, p5,
 
 Initial gating of sample data
 ```{r}
-fcsFile <- list.files("../Data/flow/Colombia/", 
+fcsFile <- list.files("../Data/flow/Human_Clinical/", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -597,8 +597,7 @@ total_phenotypes <- all_gated %>%
 
   
 pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, 
-           main ="All Colombia Populations")
+         color = viridis_colors, show_rownames = FALSE)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -627,6 +626,7 @@ my_colors <- list(lineage = c(`T cell` = "darkorchid1", `B cell` = "#F8766D",
 
 
 test_rearrange <- sample_populations %>%
+  select(CD45, CD3, CD19, HLA_DR, CD27) %>%
   arrange(CD3, CD19) %>%
   mutate(population = paste0("Pop", c(1:nrow(sample_populations)))) %>%
   column_to_rownames("population") 
@@ -687,7 +687,7 @@ Confirm pipeline populations with manual gating
 ```{r}
 
 # read in and clean manual gating percentage data
-manual_gating <- read_xlsx("../Data/flow/Colombia/manual_gating.xlsx") %>%
+manual_gating <- read_xlsx("../Data/flow/Human_Clinical/manual_gating.xlsx") %>%
   dplyr::rename(`population` = "..1",
                 percent_manual = "Manual percent") %>%
   na.omit()
@@ -710,11 +710,13 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
 
 # print out the comparison data in a pretty table
 comparison[1:15,] %>%
-  mutate(`% Based On Manual Gating` = percent_manual,
+  mutate(Population = population,
+         `% Based On Manual Gating` = percent_manual,
          `% Based on Automated Pipeline` = percent_pipeline,
          `Absolute Difference` = absolute_difference,
          `Average Difference` = average_difference) %>%
-  kable(align = "c"()) %>%
+  select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
+  kable(align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
   row_spec(0:nrow(comparison), color = "black") %>%
   print()
@@ -723,7 +725,7 @@ comparison[1:15,] %>%
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
-  ggtitle("Colombia Data: Manual vs. Pipeline Percentage") +
+  ggtitle("Human Clinical Data: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
   theme_classic()
