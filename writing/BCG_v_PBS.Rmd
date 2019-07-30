@@ -708,7 +708,8 @@ ggcyto(gs[[3]], aes(x = `FSC-A`, y = `FSC-H`)) +
   theme(axis.text = element_text(size = 16)) +
   ggtitle("Singlets") +
   theme_gray() +
-  geom_stats() 
+  geom_stats() + 
+  theme(strip.text = element_blank())
 
 
 ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) + 
@@ -721,7 +722,8 @@ ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) +
   theme(axis.text = element_text(size = 16)) +
   ggtitle("Leukocytes") +
   theme_gray() +
-  geom_stats()
+  geom_stats()+ 
+  theme(strip.text = element_blank())
 
 ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
   geom_density() + 
@@ -733,7 +735,8 @@ ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) +
   ggtitle("Live") +
   theme_gray() +
   geom_stats() +
-  labs_cyto("both")
+  labs_cyto("both") + 
+  theme(strip.text = element_blank())
 
 ```
 
@@ -1074,7 +1077,7 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
 
 Confirm pipeline populations with manual gating
 
-```{r fig.height=5}
+```{r}
 
 # read in and clean manual gating percentage data
 manual_gating_pop3 <- read_xlsx("../Data/flow/BCG_v_PBS/manual_gating_pop3.xlsx") %>%
@@ -1131,6 +1134,40 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme_classic()
   
 nrow(comparison)
+```
+Want to try to add different colors to facets
+```{r}
+ggplot(pops_CFUs, aes(percentage, CFU)) +
+  geom_point(color = "#56C667FF") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17),
+        strip.background = element_rect(color = c(rep("blue", 35), "red")))
+
+
+
+
+fills <- c(rep("red", length(unique(pops_CFUs$population))))
+
+g <- ggplot_gtable(ggplot_build(pp))
+
+strip_t <- which(grepl('strip-t', g$layout$name))
+
+k <- 1
+
+for (i in strip_t) {
+  j <- which(grepl('rect', g$grobs[[i]]$grobs[[1]]$childrenOrder))
+  g$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  k <- k+1
+}
+
+grid.draw(g)
 ```
 
 
