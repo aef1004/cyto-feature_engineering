@@ -292,6 +292,8 @@ FMO_gated_df <- rbind(FMO_gated_df, FMO_gated_df_redo)
 
 plotGate(gs_FMO[[3]])
 
+
+
 ```
 
 Pull out the individual FMOS
@@ -381,7 +383,7 @@ TNF_FMO <- FMO_gated_df %>%
 Feature engineering FMOs and plot
 
 Try messing with hexbins
-```{r fig.width = 9.5, fig.height=5, warning=FALSE}
+```{r fig.width = 11, fig.height=4, warning=FALSE}
 p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = SSC.A)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
@@ -604,7 +606,7 @@ Gating the sample data
 
 I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized. I will need to read them in separately and then rename one of the two so that the cases match
 
-```{r warning=FALSE}
+```{r warning=FALSE, fig.height = 2, fig.width=2}
 
 fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/", 
                        pattern = ".fcs", full = TRUE)
@@ -620,6 +622,10 @@ gating(initial_gate, gs)
 
 # View the gates
 plotGate(gs[[12]])
+
+
+
+
 
 # Pull out the gated data
 gated_data <- getData(gs, "live") %>% 
@@ -689,6 +695,46 @@ all_gated_df <- rbind(all_gated_df, D90_all_gated_df)
 
 # confirm that all of the data is here
 unique(all_gated_df$filename)
+
+
+
+ggcyto(gs[[3]], aes(x = `FSC-A`, y = `FSC-H`)) + 
+  geom_hex(bins = 50) + 
+  xlim(-100, 4000000) + 
+  scale_fill_viridis_c() +
+  geom_gate("singlets") +
+  xlab("FSC-A") +
+  ylab("FSC-H") +
+  theme(axis.text = element_text(size = 16)) +
+  ggtitle("Singlets") +
+  theme_gray() +
+  geom_stats() 
+
+
+ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) + 
+  geom_hex(bins = 50) + 
+  scale_fill_viridis_c() +
+  geom_gate("lymph") +
+  ylim(-100, 4000000) + 
+  xlab("FSC-A") +
+  ylab("SSC-A") +
+  theme(axis.text = element_text(size = 16)) +
+  ggtitle("Leukocytes") +
+  theme_gray() +
+  geom_stats()
+
+ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
+  geom_density() + 
+  geom_gate("live") + 
+  xlim(-100,50000) + 
+  xlab("Zombie NIR-A") +
+  ylab("Density") +
+  theme(axis.text = element_text(size = 16)) +
+  ggtitle("Live") +
+  theme_gray() +
+  geom_stats() +
+  labs_cyto("both")
+
 ```
 
 Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the 99%.
@@ -787,7 +833,7 @@ Data visualization
 
 We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD3+ cells that constitute >0.5% of total live leukocytes in a sample.
 
-```{r}
+```{r fig.height = 2.25, fig.width = 1.75}
 # to view all of the possible combinations
 total_phenotypes <- all_gated %>%
     select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
@@ -800,8 +846,7 @@ total_phenotypes <- all_gated %>%
   mutate_all(~as.numeric.factor(.))
 
 pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE,
-           main ="All Lung Populations")
+         color = viridis_colors, show_rownames = FALSE)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -882,8 +927,7 @@ pheatmap(phenotype_data[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = paste("Pop", 1:nrow(sample_populations)), 
            annotation_row = phenotype_annot,  gaps_row = c(17, 29, 35),
            cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
-         color = viridis_colors, cutree_rows = 2,
-           main = "Unique CD3+ Cells")
+         color = viridis_colors, cutree_rows = 2)
 ```
 
 Want to get the percentages added so can plot the percentages with the new 
@@ -932,7 +976,7 @@ corr <- sample_populations_all_groups %>%
 corr <- round(cor(corr), 1)
 
 # plot the population correlation plot separated by the lineages
-superheat(corr, title = "Population Correlation", row.title = "Populations", column.title = "Populations",  bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)))
+superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 3, left.label.text.size = 3)
 
 # creates a legend for the superheat correlation plot
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
@@ -1030,7 +1074,7 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
 
 Confirm pipeline populations with manual gating
 
-```{r}
+```{r fig.height=5}
 
 # read in and clean manual gating percentage data
 manual_gating_pop3 <- read_xlsx("../Data/flow/BCG_v_PBS/manual_gating_pop3.xlsx") %>%
@@ -1068,12 +1112,17 @@ comparison <- full_join(manual_gating_pop3, pipeline_pop3, by = c("Timepoint", "
 
 # print out the comparison data in a pretty table
 comparison %>%
-  kable() %>%
+  mutate(`% Based On Manual Gating` = percent_manual,
+         `% Based on Automated Pipeline` = percent_pipeline,
+         `Absolute Difference` = absolute_difference,
+         `Average Difference` = average_difference) %>%
+  select(Timepoint, Group, Number, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
+  kable(align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-  print()
+  row_spec(0:nrow(comparison), color = "black")
 
 # compare the two gating types with manual v. pipeline plot
-ggplot(comparison, aes(x = percent_pipeline, y = percent_manual, color = Timepoint, shape = Group)) +
+ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
   ggtitle("Population 3: Manual vs. Pipeline Percentage") +
@@ -1081,6 +1130,7 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual, color = Timepoi
   ylab("Manual Percent") +
   theme_classic()
   
+nrow(comparison)
 ```
 
 

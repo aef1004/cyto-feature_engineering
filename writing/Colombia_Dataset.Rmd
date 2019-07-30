@@ -710,8 +710,13 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
 
 # print out the comparison data in a pretty table
 comparison[1:15,] %>%
-  kable() %>%
+  mutate(`% Based On Manual Gating` = percent_manual,
+         `% Based on Automated Pipeline` = percent_pipeline,
+         `Absolute Difference` = absolute_difference,
+         `Average Difference` = average_difference) %>%
+  kable(align = "c"()) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0:nrow(comparison), color = "black") %>%
   print()
 
 # compare the two gating types with manual v. pipeline plot
