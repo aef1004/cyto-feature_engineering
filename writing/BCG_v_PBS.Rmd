@@ -909,7 +909,7 @@ phenotype_data <- sample_populations %>%
                           ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
                                  "Double Positive")))) %>%
   mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
-                       ifelse(CD44 ==1 & CD62L==0 & CD27 == 0, "Effector", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
                               ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
                                      ifelse(CD44==1 & CD62L ==1, "Central Mem",
                                      "Unknown"))))) %>%
