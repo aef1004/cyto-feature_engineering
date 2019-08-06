@@ -1025,7 +1025,7 @@ facets_for_timeseries$population <-  factor(facets_for_timeseries$population,
 ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
                                  y = average_percent, group = Group, color = Group)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.05) +
+            ymin = -Inf,ymax = Inf, alpha = 0.2) +
   scale_fill_identity() +
   geom_point() +
   geom_line() +
@@ -1033,7 +1033,7 @@ ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "
   xlab("Days Post-Infection") +
   ylab("Average Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
-  scale_color_manual(values = viridis_colors) +
+  scale_color_manual(values = c("black", "white")) +
   theme_gray() +
     theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
