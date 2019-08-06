@@ -111,18 +111,17 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
 
 Try normal ggplot
 
-<<<<<<< HEAD
+
 
 # remove add
 # data looks messy with everything in a line
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
           data = lung_CFU, size = 0.1,
        font.label = list(size = 30, face = "plain")) +
-=======
+
 ```{r fig.width = 3, fig.height = 1.2}
 ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   geom_jitter(width = 0.2) +
->>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
   facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
              labeller = label_both) +
   scale_color_manual(values = viridis_colors) +
@@ -134,7 +133,7 @@ ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   theme_bw()
 ```
 
-<<<<<<< HEAD
+
 
 ```{r}
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
@@ -153,5 +152,3 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
   rotate_x_text(45)  
 ```
 
-=======
->>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
