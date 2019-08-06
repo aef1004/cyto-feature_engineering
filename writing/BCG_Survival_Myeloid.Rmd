@@ -527,7 +527,8 @@ nrow(total_phenotypes)
 
 # view the specific cell phenotypes we're interested in
 sample_populations <- all_gated %>%
-  dplyr::filter(percentage > 0.5) %>%
+  dplyr::filter(percentage >0.5) %>%
+  dplyr::filter(CD11B ==1 | CD11C == 1 | Ly6C ==1 | Ly6G == 1) %>%
   select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
   group_by(CD11B, CD11C, Ly6C, Ly6G, MHCII, F4_80, CCR2, CD86, PDL1, TLR2) %>%
   unique() %>%
@@ -712,7 +713,7 @@ CFUs <- read_xlsx("../Data/flow/BCG_Survival/BCG_Survival_CFUs.xlsx") %>%
 
 # clean the flow data and prepare to join with CFU
 pops_for_CFUs <- sample_populations_all_groups %>%
-  separate(filename, into = c("Timepoint", "Group", "Organ", "Vaccination", "Number"), sep = "_") %>%
+  separate(filename, into = c("Day", "Timepoint", "Group", "Organ", "Vaccination", "Number"), sep = "_") %>%
   filter(Vaccination == "BCG") %>%
   dplyr::mutate(Timepoint = str_replace(Timepoint, "D", "")) %>%
   dplyr::mutate(Timepoint = as.numeric(Timepoint)) %>%
@@ -738,4 +739,63 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+```
+
+Confirm pipeline populations with manual gating
+```{r}
+
+
+get_percentage <- function(column) {
+  100*(column/manual_gating$live_leuk)
+}
+
+# read in and clean manual gating percentage data
+manual_gating <- read_xlsx("../Data/flow/BCG_Survival_Myeloid/Manual_gating.xlsx") %>%
+  dplyr::rename(`Sample` = "Sample:",
+                live_leuk = "Singlets/Leukocytes/Live | Count") %>%
+  na.omit() %>%
+  mutate_at(vars(-Sample, -live_leuk), get_percentage) %>%
+  mutate(Sample = str_replace_all(Sample, " ", "_")) %>%
+  separate(Sample, into = c("Day", "Timepoint", "Group", "Organ", "Vacc", "Number", "Date", "random", "Unmix"), sep = "_") %>%
+  select(-Date, -random, -Unmix, -live_leuk) %>%
+  unite(filename, c(Day, Timepoint, Group, Organ, Vacc, Number), sep = "_") %>%
+  gather(key = "population", value = "percent_manual", -filename)
+
+# prepare the flow CFU data for joining with manual gating
+sample_populations_all_groups <- sample_populations_all_groups %>%
+  dplyr::rename(percent_pipeline = percentage)
+
+
+# should add absolute value of the percent_pipeline-percent_manual for error (abs)
+# join the manual and pipeline percentage data
+comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population")) %>%
+  mutate(difference = round(percent_pipeline - percent_manual, digits = 2)) %>%
+  mutate(error = round(100*(percent_pipeline - percent_manual)/percent_manual, digits = 2)) %>%
+  mutate(percent_manual = round(percent_manual, digits = 2),
+         percent_pipeline = round(percent_pipeline, digits = 2)) %>%
+  mutate(absolute_difference = abs(difference),
+         average_difference = mean(absolute_difference)) %>%
+  select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
+
+# print out the comparison data in a pretty table
+comparison[1:15,] %>%
+  mutate(Population = population,
+         `% Based On Manual Gating` = percent_manual,
+         `% Based on Automated Pipeline` = percent_pipeline,
+         `Absolute Difference` = absolute_difference,
+         `Average Difference` = average_difference) %>%
+  select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
+  kable(align = "c") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0:nrow(comparison), color = "black") %>%
+  print()
+
+# compare the two gating types with manual v. pipeline plot
+ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  ggtitle("Human Clinical Data: Manual vs. Pipeline Percentage") +
+  xlab("Pipeline Percent") +
+  ylab("Manual Percent") +
+  theme_classic()
 ```
