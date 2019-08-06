@@ -1076,7 +1076,7 @@ facets_for_CFUs$population <-  factor(facets_for_CFUs$population,
 
 ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.05) +
+            ymin = -Inf,ymax = Inf, alpha = 0.05) + 
   scale_fill_identity() +
   geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
