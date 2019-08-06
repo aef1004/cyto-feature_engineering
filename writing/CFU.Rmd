@@ -111,9 +111,18 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
 
 Try normal ggplot
 
+<<<<<<< HEAD
+
+# remove add
+# data looks messy with everything in a line
+ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
+          data = lung_CFU, size = 0.1,
+       font.label = list(size = 30, face = "plain")) +
+=======
 ```{r fig.width = 3, fig.height = 1.2}
 ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   geom_jitter(width = 0.2) +
+>>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
   facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
              labeller = label_both) +
   scale_color_manual(values = viridis_colors) +
@@ -125,3 +134,24 @@ ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   theme_bw()
 ```
 
+<<<<<<< HEAD
+
+```{r}
+ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
+          data = lung_CFU, size = 0.1,
+       font.label = list(size = 30, face = "plain")) +
+  facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
+             labeller = label_both)+
+  stat_pvalue_manual(data = lung_CFU_signif, 
+                     label = "star",
+                    xmin = "group1", xmax = "group2",
+                     y.position = c(6.5)) +
+  xlab("Mouse Strain") +
+  ylab("log 10 CFU") +
+  coord_cartesian(ylim = c(2,8)) +
+  ggtitle("Lung Bacterial Load") +
+  rotate_x_text(45)  
+```
+
+=======
+>>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
