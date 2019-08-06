@@ -34,6 +34,7 @@ library(scales)
 library(viridis)
 library(superheat)
 library(kableExtra)
+library(ggpubr)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -1143,12 +1144,12 @@ comparison %>%
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
+  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman") +
   ggtitle("Population 3: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
   theme_classic()
   
-nrow(comparison)
 ```
 
 
