@@ -803,3 +803,11 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   ylab("Manual Percent") +
   theme_classic()
 ```
+
+```{r}
+all_gated %>%
+  filter(Ly6G == 1 & filename == "DAY_160_BL6_SPLEEN_BCG_A") %>%
+  mutate(count = sum(cell_no)) %>%
+  select(count)
+```
+
