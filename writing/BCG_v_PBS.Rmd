@@ -296,6 +296,39 @@ plotGate(gs_FMO[[3]])
 
 
 ```
+Try FMO new way
+
+Need to
+- make dataframe that only contains CD3 marker MFI for the CD3 FMO, only CD103 for CD103 FMO etc.
+- Create data frame with the different thresholds
+```{r}
+# try to do the thresholds
+FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  group_by(filename) %>%
+  summarise(CD3_threshold = quantile(CD3, 0.99),
+            CD103_threshold = quantile(CD103, 0.99))
+
+# try to make the data readable with ggplot
+FMO_gated_for_facet <-FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  gather(key = "Marker", value = "MFI", -filename, -SSC.A) 
+
+# not plotting correctly
+ggplot(FMO_gated_for_facet, aes(x = MFI, y = `SSC.A`)) +
+   geom_hex(bins = 100, na.rm = TRUE) +
+   scale_fill_viridis_c() +
+  facet_wrap(~Marker, ncol = 5) +
+  ylab("") +
+   geom_vline(xintercept = quantile(TNF_FMO$TNF, 0.99))+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
+
+```
+
+
 
 Pull out the individual FMOS
 ```{r}
