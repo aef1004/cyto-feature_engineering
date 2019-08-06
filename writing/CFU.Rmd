@@ -18,6 +18,8 @@ library(broom)
 library(purrr)
 library(tidyr)
 ```
+
+
 Why won't this work?
   mutate(Mouse = replace(Mouse, c("Group1", "Group2", "Group3", "Group4"),
                          c("PBS", "BCG", "smegmatis", "BCG + smegmatis")))
@@ -25,8 +27,6 @@ Read in csv and clean data
 ```{r}
 list.files()
 #must read in as csv for levels to work
-
- 
 
 smeg_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
   rename(Day = Timepoint) %>%
@@ -88,7 +88,7 @@ lung_CFU_signif <- smeg_signif_data %>%
 viridis_colors <- c("#56C667FF", "#3F4788FF")
 
 
-# black backgroun
+# black background
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
          add = c("mean_se", "jitter"), data = lung_CFU, 
        font.label = list(size = 30, face = "plain")) +
@@ -108,84 +108,33 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
 
 ```
 
-Testing mean_se
-```{r fig.width = 3, fig.height = 1.2}
-# mean_se
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("mean_se", "jitter"), data = lung_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
-             labeller = label_both) + 
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  ggtitle("Lung Bacterial Load") +
-  theme_bw() +
-  rotate_x_text(45)  +
-  scale_color_manual(values = viridis_colors) 
 
-# remove mean_se
-# too many points - like a lot of extra
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("jitter"), data = lung_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
-             labeller = label_both)+
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  ggtitle("Lung Bacterial Load") +
-  theme_bw() +
-  rotate_x_text(45)  +
-  scale_color_manual(values = viridis_colors) 
+Try normal ggplot
 
+<<<<<<< HEAD
 
 # remove add
 # data looks messy with everything in a line
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
           data = lung_CFU, size = 0.1,
        font.label = list(size = 30, face = "plain")) +
+=======
+```{r fig.width = 3, fig.height = 1.2}
+ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
+  geom_jitter(width = 0.2) +
+>>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
   facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
-             labeller = label_both)+
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
+             labeller = label_both) +
+  scale_color_manual(values = viridis_colors) +
+  stat_compare_means(method = "t.test", label.y = 7.5) +
+  xlab("Mouse Group") +
   ylab("log 10 CFU") +
   coord_cartesian(ylim = c(2,8)) +
   ggtitle("Lung Bacterial Load") +
-  theme_bw() +
-  rotate_x_text(45)  +
-  scale_color_manual(values = viridis_colors) 
-
-
-# add facet to ggline rather than separate functoin
-# still does not work
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         data = lung_CFU, add = "jitter", facet.by = "Day",
-       font.label = list(size = 30, face = "plain")) +
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  ggtitle("Lung Bacterial Load") +
-  theme_bw() +
-  rotate_x_text(45)  +
-  scale_color_manual(values = viridis_colors) 
+  theme_bw()
 ```
 
+<<<<<<< HEAD
 
 ```{r}
 ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
@@ -204,3 +153,5 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
   rotate_x_text(45)  
 ```
 
+=======
+>>>>>>> e77d1d299e0777b688d571f978a9521d13292cdd
