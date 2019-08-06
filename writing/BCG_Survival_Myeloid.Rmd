@@ -753,7 +753,8 @@ get_percentage <- function(column) {
 }
 
 # read in and clean manual gating percentage data
-manual_gating <- read_xlsx("../Data/flow/BCG_Survival_Myeloid/Manual_gating.xlsx") %>%
+manual_gating <- read_xlsx("../Data/flow/BCG_Survival_Myeloid/Manual_gating.xlsx", 
+                           sheet = 2) %>%
   dplyr::rename(`Sample` = "Sample:",
                 live_leuk = "Singlets/Leukocytes/Live | Count") %>%
   mutate_at(vars(-Sample, -live_leuk), get_percentage) %>%
