@@ -742,6 +742,9 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
 ```
 
 Confirm pipeline populations with manual gating
+
+
+**Pop 2 and Pop3 have big differences**
 ```{r}
 
 
@@ -753,10 +756,11 @@ get_percentage <- function(column) {
 manual_gating <- read_xlsx("../Data/flow/BCG_Survival_Myeloid/Manual_gating.xlsx") %>%
   dplyr::rename(`Sample` = "Sample:",
                 live_leuk = "Singlets/Leukocytes/Live | Count") %>%
-  na.omit() %>%
   mutate_at(vars(-Sample, -live_leuk), get_percentage) %>%
   mutate(Sample = str_replace_all(Sample, " ", "_")) %>%
   separate(Sample, into = c("Day", "Timepoint", "Group", "Organ", "Vacc", "Number", "Date", "random", "Unmix"), sep = "_") %>%
+  na.omit() %>%
+  mutate(Group = str_replace(Group, "-KO", "")) %>%
   select(-Date, -random, -Unmix, -live_leuk) %>%
   unite(filename, c(Day, Timepoint, Group, Organ, Vacc, Number), sep = "_") %>%
   gather(key = "population", value = "percent_manual", -filename)
@@ -768,7 +772,7 @@ sample_populations_all_groups <- sample_populations_all_groups %>%
 
 # should add absolute value of the percent_pipeline-percent_manual for error (abs)
 # join the manual and pipeline percentage data
-comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population")) %>%
+comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population", "filename")) %>%
   mutate(difference = round(percent_pipeline - percent_manual, digits = 2)) %>%
   mutate(error = round(100*(percent_pipeline - percent_manual)/percent_manual, digits = 2)) %>%
   mutate(percent_manual = round(percent_manual, digits = 2),
@@ -778,7 +782,7 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
-comparison[1:15,] %>%
+comparison%>%
   mutate(Population = population,
          `% Based On Manual Gating` = percent_manual,
          `% Based on Automated Pipeline` = percent_pipeline,
@@ -794,7 +798,7 @@ comparison[1:15,] %>%
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
-  ggtitle("Human Clinical Data: Manual vs. Pipeline Percentage") +
+  ggtitle("BCG Survival Myeloid: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
   theme_classic()
