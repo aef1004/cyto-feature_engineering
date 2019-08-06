@@ -993,6 +993,13 @@ Data visualization
 - time series
 
 ```{r fig.width = 6, fig.height= 3}
+color_for_facets <- phenotype_data %>%
+  select(lineage, population) %>%
+  mutate(col = ifelse(lineage == "Double Negative", "darkturquoise", 
+                      ifelse(lineage == "T Helper", "plum3",
+                             ifelse(lineage == "Cytotoxic T", "hotpink", 
+                                    ifelse(lineage == "Double Positive", "orange", "brown")))))
+
 
 # take the data for filtered populations and rename so that plots are pretty
 pops_for_plots_average <- sample_populations_all_groups %>%
@@ -1008,15 +1015,18 @@ pops_for_plots_average <- sample_populations_all_groups %>%
          Timepoint = str_replace(Timepoint, "D60", "60"),
          Timepoint = str_replace(Timepoint, "D90", "90"))
 
+facets_for_timeseries <- left_join(pops_for_plots_average, color_for_facets, by = "population")
+
 # convert populations to factor to put in order for the plot
-pops_for_plots_average$population <-  factor(pops_for_plots_average$population, 
-                                    levels = paste0("Pop", c(1:length(unique(pops_for_plots_average$population)))))
+facets_for_timeseries$population <-  factor(facets_for_timeseries$population, 
+                                    levels = paste0("Pop", c(1:length(unique(facets_for_timeseries$population)))))
 
 
-
-
-ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
+ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
                                  y = average_percent, group = Group, color = Group)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.05) +
+  scale_fill_identity() +
   geom_point() +
   geom_line() +
   facet_wrap("population", scales = "free", ncol = 9) +
@@ -1032,6 +1042,8 @@ ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", 
         title = element_text(size = 20),
         legend.text = element_text(size=18),
         legend.key.size = unit(1.5, "line"))
+
+
 
 ```
 
@@ -1057,13 +1069,16 @@ pops_for_CFUs <- sample_populations_all_groups %>%
 # join together the CFU data and the population data
 pops_CFUs <- inner_join(pops_for_CFUs, CFUs, by = c("Group", "Number", "Timepoint")) 
 
-#  convert populations to factor to put in order for the plot
-pops_CFUs$population <-  factor(pops_CFUs$population, 
-                                    levels = paste0("Pop", c(1:length(unique(pops_CFUs$population)))))
+facets_for_CFUs <- left_join(pops_CFUs, color_for_facets, by = "population")
 
+facets_for_CFUs$population <-  factor(facets_for_CFUs$population, 
+                                    levels = paste0("Pop", c(1:length(unique(facets_for_CFUs$population)))))
 
-ggplot(pops_CFUs, aes(percentage, CFU)) +
-  geom_point(color = "#56C667FF") +
+ggplot(facets_for_CFUs, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.05) +
+  scale_fill_identity() +
+  geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
   facet_wrap(~population, scales = "free_x", ncol = 9) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
@@ -1148,6 +1163,9 @@ p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
+
+
 
 ```
 
