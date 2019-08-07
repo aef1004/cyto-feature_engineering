@@ -1073,6 +1073,21 @@ ggplot(pops_CFUs, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
+D30_pops_CFUs <- pops_CFUs %>%
+  dplyr::filter(`Timepoint` == 30)
+
+ggplot(D30_pops_CFUs, aes(percentage, CFU, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
 ```
 
 Confirm pipeline populations with manual gating
@@ -1140,6 +1155,7 @@ Want to try to add different colors to facets
 p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
   geom_point(color = "#56C667FF") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  geom_rect()
   facet_wrap(~population, scales = "free_x", ncol = 9) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
   ylab("log10 CFU") +
