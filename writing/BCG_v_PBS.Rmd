@@ -34,6 +34,7 @@ library(scales)
 library(viridis)
 library(superheat)
 library(kableExtra)
+library(ggpubr)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -295,6 +296,39 @@ plotGate(gs_FMO[[3]])
 
 
 ```
+Try FMO new way
+
+Need to
+- make dataframe that only contains CD3 marker MFI for the CD3 FMO, only CD103 for CD103 FMO etc.
+- Create data frame with the different thresholds
+```{r}
+# try to do the thresholds
+FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  group_by(filename) %>%
+  summarise(CD3_threshold = quantile(CD3, 0.99),
+            CD103_threshold = quantile(CD103, 0.99))
+
+# try to make the data readable with ggplot
+FMO_gated_for_facet <-FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  gather(key = "Marker", value = "MFI", -filename, -SSC.A) 
+
+# not plotting correctly
+ggplot(FMO_gated_for_facet, aes(x = MFI, y = `SSC.A`)) +
+   geom_hex(bins = 100, na.rm = TRUE) +
+   scale_fill_viridis_c() +
+  facet_wrap(~Marker, ncol = 5) +
+  ylab("") +
+   geom_vline(xintercept = quantile(TNF_FMO$TNF, 0.99))+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
+
+```
+
+
 
 Pull out the individual FMOS
 ```{r}
@@ -993,6 +1027,13 @@ Data visualization
 - time series
 
 ```{r fig.width = 6, fig.height= 3}
+color_for_facets <- phenotype_data %>%
+  select(lineage, population) %>%
+  mutate(col = ifelse(lineage == "Double Negative", "darkturquoise", 
+                      ifelse(lineage == "T Helper", "plum3",
+                             ifelse(lineage == "Cytotoxic T", "hotpink", 
+                                    ifelse(lineage == "Double Positive", "orange", "brown")))))
+
 
 # take the data for filtered populations and rename so that plots are pretty
 pops_for_plots_average <- sample_populations_all_groups %>%
@@ -1008,22 +1049,25 @@ pops_for_plots_average <- sample_populations_all_groups %>%
          Timepoint = str_replace(Timepoint, "D60", "60"),
          Timepoint = str_replace(Timepoint, "D90", "90"))
 
+facets_for_timeseries <- left_join(pops_for_plots_average, color_for_facets, by = "population")
+
 # convert populations to factor to put in order for the plot
-pops_for_plots_average$population <-  factor(pops_for_plots_average$population, 
-                                    levels = paste0("Pop", c(1:length(unique(pops_for_plots_average$population)))))
+facets_for_timeseries$population <-  factor(facets_for_timeseries$population, 
+                                    levels = paste0("Pop", c(1:length(unique(facets_for_timeseries$population)))))
 
 
-
-
-ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
+ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
                                  y = average_percent, group = Group, color = Group)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) +
+  scale_fill_identity() +
   geom_point() +
   geom_line() +
   facet_wrap("population", scales = "free", ncol = 9) +
   xlab("Days Post-Infection") +
   ylab("Average Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
-  scale_color_manual(values = viridis_colors) +
+  scale_color_manual(values = c("black", "white")) +
   theme_gray() +
     theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
@@ -1032,6 +1076,8 @@ ggplot(pops_for_plots_average, aes(x = factor(Timepoint, levels = c("30", "60", 
         title = element_text(size = 20),
         legend.text = element_text(size=18),
         legend.key.size = unit(1.5, "line"))
+
+
 
 ```
 
@@ -1057,13 +1103,16 @@ pops_for_CFUs <- sample_populations_all_groups %>%
 # join together the CFU data and the population data
 pops_CFUs <- inner_join(pops_for_CFUs, CFUs, by = c("Group", "Number", "Timepoint")) 
 
-#  convert populations to factor to put in order for the plot
-pops_CFUs$population <-  factor(pops_CFUs$population, 
-                                    levels = paste0("Pop", c(1:length(unique(pops_CFUs$population)))))
+facets_for_CFUs <- left_join(pops_CFUs, color_for_facets, by = "population")
 
+facets_for_CFUs$population <-  factor(facets_for_CFUs$population, 
+                                    levels = paste0("Pop", c(1:length(unique(facets_for_CFUs$population)))))
 
-ggplot(pops_CFUs, aes(percentage, CFU)) +
-  geom_point(color = "#56C667FF") +
+ggplot(facets_for_CFUs, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.05) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
   facet_wrap(~population, scales = "free_x", ncol = 9) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
@@ -1143,13 +1192,14 @@ comparison %>%
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
+  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman") +
   ggtitle("Population 3: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
   theme_classic()
   
-nrow(comparison)
 ```
+
 Want to try to add different colors to facets
 ```{r}
 p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
@@ -1169,41 +1219,7 @@ p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
 
 
 
-Test with sample data
-https://stackoverflow.com/questions/53455092/r-ggplot2-change-colour-of-font-and-background-in-facet-strip
-```{r}
-
-library(grid)
-
-# Generate the ggplot2 plot grob
-g <- grid.force(ggplotGrob(p))
-
-# Get the names of grobs and their gPaths into a data.frame structure
-grobs_df <- do.call(cbind.data.frame, grid.ls(g, print = FALSE))
-
-# Build optimal gPaths that will be later used to identify grobs and edit them
-grobs_df$gPath_full <- paste(grobs_df$gPath, grobs_df$name, sep = "::")
-grobs_df$gPath_full <- gsub(pattern = "layout::", 
-                            replacement = "", 
-                            x = grobs_df$gPath_full, 
-                            fixed = TRUE)
-
-# Get the gPaths of the strip background grobs
-strip_bg_gpath <- grobs_df$gPath_full[grepl(pattern = ".*strip\\.background.*", 
-                                            x = grobs_df$gPath_full)]
-
-n_cols <- length(strip_bg_gpath)
-fills <- rev(c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)))
 
 
-# Edit the grobs
-for (i in 1:length(strip_bg_gpath)){
-  g <- editGrob(grob = g, gPath = strip_bg_gpath[i], gp = gpar(fill = fills[i]))
-}
 
-# Draw the edited plot
-grid.newpage(); grid.draw(g)
-
-
-```
 
