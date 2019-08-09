@@ -35,6 +35,7 @@ library(viridis)
 library(superheat)
 library(kableExtra)
 library(ggpubr)
+library(broom)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -1186,6 +1187,24 @@ ggplot(facets_for_CFUs_D90, aes(percentage, CFU)) +
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
 
+
+fitted_models <- facets_for_CFUs %>% 
+  group_by(population) %>% 
+  do(model = lm(percentage ~ CFU, data = .)) %>%
+  tidy(model) %>%
+  filter(term == "CFU") %>%
+  select(population, p.value) %>%
+  rename(p.value = p.value) %>%
+  ungroup()
+
+fitted_models %>%
+  mutate(p.val.adj = p.adjust(fitted_models$p.value, "BH")) %>%
+  mutate("Significance" = p.val.adj < 0.05) %>%
+  rename("p-value" = p.value,
+         "Adjusted p-value" = p.val.adj) %>%
+  kable(align = "c") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0:nrow(fitted_models), color = "black")
 
 ```
 
