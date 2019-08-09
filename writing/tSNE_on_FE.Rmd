@@ -590,35 +590,44 @@ color_for_facets <- phenotype_data %>%
                                      ifelse(CD44==1 & CD62L ==1, "Central Mem",
                                      "Unknown")))))
 ```{r}
-
+start_FE <- Sys.time()
 all_gated_tSNE <- all_gated %>%
   mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
                           ifelse(CD4 == 1 & CD8 ==0,"T Helper",
                           ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
-                                 "Double Positive")))) %>%
-  select(filename, lineage, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  unite(lineage_cell, c(lineage, cell), sep = " ") %>%
+  select(filename, lineage_cell, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
            TNF)
 
 
-colors = rainbow(length(unique(all_gated_tSNE$lineage)))
-names(colors) = unique(all_gated_tSNE$lineage)
-
+colors = rainbow(length(unique(all_gated_tSNE$lineage_cell)))
+names(colors) = unique(all_gated_tSNE$lineage_cell)
+library(Rtsne)
 tsne_FE <- Rtsne(all_gated_tSNE[,-c(1:2)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
 
 ## Plotting
 data_plot_FE <- as.data.frame(tsne_FE$Y)
 colnames(data_plot_FE) <- c("tSNE_1", "tSNE_2")
 
-ggplot(data_plot_FE, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE$lineage)) + 
+ggplot(data_plot_FE, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE$lineage_cell)) + 
   geom_point(size = 0.2) + 
   coord_fixed(ratio = 1) +
   xlab("tSNE 1") +
   ylab("tSNE 2") +
   labs(color = "Lineage") +
   ggtitle("Feature Engineered t-SNE projection") + 
-  theme_bw() +
-  scale_fill_discrete(name = "New Legend Title")
+  theme_bw()
+
+end_FE <- Sys.time()
+
+end_FE - start_FE
 ```
 
 t-SNE on data without FE
