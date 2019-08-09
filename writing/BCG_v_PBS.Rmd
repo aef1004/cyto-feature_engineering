@@ -1122,6 +1122,63 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
+
+# Different timepoints
+facets_for_CFUs_D30 <- facets_for_CFUs %>%
+  filter(Timepoint == 30)
+
+ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Day 30: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+facets_for_CFUs_D60 <- facets_for_CFUs %>%
+  filter(Timepoint == 60)
+
+ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Day 60: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+facets_for_CFUs_D90 <- facets_for_CFUs %>%
+  filter(Timepoint == 90)
+
+ggplot(facets_for_CFUs_D90, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Day 90: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
 ```
 
 Confirm pipeline populations with manual gating

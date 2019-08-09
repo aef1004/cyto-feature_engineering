@@ -1,10 +1,7 @@
 ---
-title: "Colombia Dataset"
-author: "Amy Fox"
+title: "Human_clinical_wo_logical"
 output: html_document
 ---
-
-This dataset includes ?????
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -399,10 +396,8 @@ sc_gated_df_test = data.frame()
 # convert each of the FMO files to a data frame, adding on the filename
 # bind all of the FMO files into one dataframe
 for (i in 1:length(sc_gated_data)) {
-  lgcl <- estimateLogicle(sc_gated_data[[i]], channels = c( "FITC-A", "PE-A",
-                                                 "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
   
-  sc_data_test <- transform(sc_gated_data[[i]], lgcl) %>%
+  sc_data_test <- sc_gated_data[[i]] %>%
     exprs() %>%
     data.frame() %>%
     mutate(filename = sampleNames(sc_gated_data[i])) 
@@ -450,7 +445,8 @@ I will use OpenCyto to find the minimum density between the two peaks (positive 
 p1 <-  ggplot(HLA_DR_sc, aes(x = HLA_DR, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(HLA_DR_sc, "HLA_DR")) +
   theme_gray()+
@@ -460,7 +456,8 @@ p1 <-  ggplot(HLA_DR_sc, aes(x = HLA_DR, y = SSC.A)) +
 p2 <- ggplot(CD19_sc, aes(x = CD19, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(CD19_sc, "CD19"))+
   theme_gray()+
@@ -470,7 +467,8 @@ p2 <- ggplot(CD19_sc, aes(x = CD19, y = SSC.A)) +
 p3 <- ggplot(CD3_sc, aes(x = CD3, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3"))+
   theme_gray()+
@@ -480,7 +478,8 @@ p3 <- ggplot(CD3_sc, aes(x = CD3, y = SSC.A)) +
 p4 <- ggplot(CD45_sc, aes(x = CD45, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(CD45_sc, "CD45"))+
   theme_gray()+
@@ -490,7 +489,8 @@ p4 <- ggplot(CD45_sc, aes(x = CD45, y = SSC.A)) +
 p5 <- ggplot(CD27_sc, aes(x = CD27, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(CD27_sc, "CD27"))+
   scale_x_log10() +
@@ -501,6 +501,19 @@ p5 <- ggplot(CD27_sc, aes(x = CD27, y = SSC.A)) +
 
 grid.arrange(p1, p2, p3, p4, p5, 
              nrow = 2)
+
+
+ggplot(CD3_sc, aes(x = CD3)) +
+   geom_histogram(bins =1000) +
+   scale_fill_viridis_c() +
+  scale_x_log10() +
+  scale_y_log10() +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3"), color = "red")+
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
 ```
 
 Initial gating of sample data
@@ -531,10 +544,8 @@ all_gated_df = data.frame()
 # convert each of the FMO files to a data frame, adding on the filename
 # bind all of the FMO files into one dataframe (though there is only 1 file)
 for (i in 1:length(gated_data)) {
-   lgcl_data <- estimateLogicle(gated_data[[i]], channels = c( "FITC-A", "PE-A",
-                                                 "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
   
-   gated_data_test <- transform(gated_data[[i]], lgcl)%>%
+   gated_data_test <- gated_data[[i]]%>%
     exprs() %>%
     data.frame() %>%
     mutate(filename = sampleNames(gated_data[i])) 
@@ -843,7 +854,8 @@ CD3_CD19_for_plot <- all_gated_df %>%
 ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+  scale_x_log10() +
+  scale_y_log10() +
    ylab("CD19") +
    geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3")) +
   geom_hline(yintercept = gate_mindensity_amy(CD19_sc, "CD19")) +
@@ -851,4 +863,3 @@ ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 20))
 ```
-
