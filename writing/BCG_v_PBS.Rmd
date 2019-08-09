@@ -1151,6 +1151,12 @@ ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
             ymin = -Inf,ymax = Inf, alpha = 0.2) + 
   scale_fill_identity() +
   geom_point(color = "black") +
+
+D30_pops_CFUs <- pops_CFUs %>%
+  dplyr::filter(`Timepoint` == 30)
+
+ggplot(D30_pops_CFUs, aes(percentage, CFU, color = Group)) +
+  geom_point() +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
   facet_wrap(~population, scales = "free_x", ncol = 9) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
@@ -1160,6 +1166,7 @@ ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
 
 facets_for_CFUs_D90 <- facets_for_CFUs %>%
   filter(Timepoint == 90)
@@ -1178,6 +1185,7 @@ ggplot(facets_for_CFUs_D90, aes(percentage, CFU)) +
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
 
 ```
 
@@ -1241,6 +1249,24 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme_classic()
   
 ```
+
+Want to try to add different colors to facets
+```{r}
+p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
+  geom_point(color = "#56C667FF") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  geom_rect()
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  ylab("log10 CFU") +
+  ggtitle("Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+```
+
 
 
 
