@@ -612,9 +612,13 @@ colnames(data_plot_FE) <- c("tSNE_1", "tSNE_2")
 
 ggplot(data_plot_FE, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE$lineage)) + 
   geom_point(size = 0.2) + 
-  coord_fixed(ratio = 1) + 
-  ggtitle("t-SNE projection with FlowSOM clustering") + 
-  theme_bw()
+  coord_fixed(ratio = 1) +
+  xlab("tSNE 1") +
+  ylab("tSNE 2") +
+  labs(color = "Lineage") +
+  ggtitle("Feature Engineered t-SNE projection") + 
+  theme_bw() +
+  scale_fill_discrete(name = "New Legend Title")
 ```
 
 t-SNE on data without FE
@@ -653,5 +657,15 @@ normal_tSNE <- all_gated_df %>%
 
 
 tsne_normal <-Rtsne(normal_tSNE[,-19], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
+
+## Plotting
+data_plot_normal <- as.data.frame(tsne_normal$Y)
+colnames(data_plot_normal) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot_normal, aes(x = tSNE_1, y = tSNE_2)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) + 
+  ggtitle("Normal t-SNE projection") + 
+  theme_bw()
 ```
 
