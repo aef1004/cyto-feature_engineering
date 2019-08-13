@@ -1,0 +1,680 @@
+---
+title: "tSNE_on_FE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This dataset includes mice that were vaccinated with either PBS (control) or BCG. 12 weeks later these mice were infected with *Mycobacterium tuberculosis*. They were evaluated via CFUs for bacterial burden and flow cytometry for immune populations 30, 60, and 90 days post-infection. 
+
+Data Manipulations
+- removed CD69 and FoxP3 markers because spillover
+- removed D30 PBS D mouse because outlier
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First, the packages must be loaded.
+```{r warning= FALSE}
+library(openCyto)
+library(flowClust)
+library(data.table)
+library(flowCore)
+library(ggcyto)
+library(FlowSOM)
+library(dplyr)
+library(pheatmap)
+library(stringr)
+library(tidyr)
+library(readxl)
+library(gridExtra)
+library(ggcorrplot)
+library(tidyverse)
+library(scales)
+library(viridis)
+library(superheat)
+library(kableExtra)
+library(ggpubr)
+library(Rtsne)
+```
+
+I have created a few functions to make it easier to analyze the data.
+
+- clean_FMO_after_gate:renames the columns; it also removes SSC boundary effects
+- statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
+- stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
+- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
+- as.numeric.factor: convert the factors for the marker names into numeric for plotting
+```{r}
+
+clean_FMO_after_gate <- function(FMO_df) {
+  FMO_df %>%
+  select(ends_with(".A"), -`FSC.A`, `SSC.A`, filename) %>%
+  dplyr::rename(`FoxP3` = "APC.A",
+         `CD44` = "APC.Fire.750.A",
+        `CD103` =  "APC.R700.A",       
+         `CD3` = "Alexa.Fluor.532.A",
+         `Sca1` = "BB515.A",
+         `IL_10` = "BV421.A",
+         `CD4` = "BV480.A",
+         `CD69` = "BV510.A",
+         `CD8` = "BV570.A", 
+         `CTLA4` = "BV605.A",
+         `CD27` = "BV650.A",
+         `CD153` = "BV711.A",
+         `KLRG1` = "BV785.A",
+         `IL_17` = "PE.A",
+         `CD122` = "PE.Cy5.A",
+         `IFN` = "PE.Cy7.A", 
+         `CD62L` = "PE.Dazzle594.A",
+         `TNF` = "Pacific.Blue.A", 
+         `CD28` = "PE.Cy5.5.A",
+         `PD1` = "PerCP.eFluor.710.A")  %>%
+   na.omit()%>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+
+}
+
+
+# taken from https://gist.github.com/kdauria/524eade46135f6348140
+stat_smooth_func <- function(mapping = NULL, data = NULL,
+                        geom = "smooth", position = "identity",
+                        ...,
+                        method = "auto",
+                        formula = y ~ x,
+                        se = TRUE,
+                        n = 80,
+                        span = 0.75,
+                        fullrange = FALSE,
+                        level = 0.95,
+                        method.args = list(),
+                        na.rm = FALSE,
+                        show.legend = NA,
+                        inherit.aes = TRUE,
+                        xpos = NULL,
+                        ypos = NULL) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = StatSmoothFunc,
+    geom = geom,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      method = method,
+      formula = formula,
+      se = se,
+      n = n,
+      fullrange = fullrange,
+      level = level,
+      na.rm = na.rm,
+      method.args = method.args,
+      span = span,
+      xpos = xpos,
+      ypos = ypos,
+      ...
+    )
+  )
+}
+
+StatSmoothFunc <- ggproto("StatSmooth", Stat,
+                      
+                      setup_params = function(data, params) {
+                        # Figure out what type of smoothing to do: loess for small datasets,
+                        # gam with a cubic regression basis for large data
+                        # This is based on the size of the _largest_ group.
+                        if (identical(params$method, "auto")) {
+                          max_group <- max(table(data$group))
+                          
+                          if (max_group < 1000) {
+                            params$method <- "loess"
+                          } else {
+                            params$method <- "gam"
+                            params$formula <- y ~ s(x, bs = "cs")
+                          }
+                        }
+                        if (identical(params$method, "gam")) {
+                          params$method <- mgcv::gam
+                        }
+                        
+                        params
+                      },
+                      
+                      compute_group = function(data, scales, method = "auto", formula = y~x,
+                                               se = TRUE, n = 80, span = 0.75, fullrange = FALSE,
+                                               xseq = NULL, level = 0.95, method.args = list(),
+                                               na.rm = FALSE, xpos=NULL, ypos=NULL) {
+                        if (length(unique(data$x)) < 2) {
+                          # Not enough data to perform fit
+                          return(data.frame())
+                        }
+                        
+                        if (is.null(data$weight)) data$weight <- 1
+                        
+                        if (is.null(xseq)) {
+                          if (is.integer(data$x)) {
+                            if (fullrange) {
+                              xseq <- scales$x$dimension()
+                            } else {
+                              xseq <- sort(unique(data$x))
+                            }
+                          } else {
+                            if (fullrange) {
+                              range <- scales$x$dimension()
+                            } else {
+                              range <- range(data$x, na.rm = TRUE)
+                            }
+                            xseq <- seq(range[1], range[2], length.out = n)
+                          }
+                        }
+                        # Special case span because it's the most commonly used model argument
+                        if (identical(method, "loess")) {
+                          method.args$span <- span
+                        }
+                        
+                        if (is.character(method)) method <- match.fun(method)
+                        
+                        base.args <- list(quote(formula), data = quote(data), weights = quote(weight))
+                        model <- do.call(method, c(base.args, method.args))
+                        
+                        m = model
+                        eq <- substitute(~~italic(r)^2~"="~r2, 
+                                         list(a = format(coef(m)[1], digits = 3), 
+                                              b = format(coef(m)[2], digits = 3), 
+                                              r2 = format(summary(m)$r.squared, digits = 3)))
+                        func_string = as.character(as.expression(eq))
+                        
+                        if(is.null(xpos)) xpos = min(data$x)*0.9
+                        if(is.null(ypos)) ypos = max(data$y)*0.9
+                        data.frame(x=xpos, y=ypos, label=func_string)
+                        
+                      },
+                      
+                      required_aes = c("x", "y")
+)
+
+viridis_colors <- c("#3F4788FF", "#56C667FF")
+
+phenotype_heatmap <- function(csv_file, population_no, title) {
+  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, 
+           color = viridis_colors, cellwidth = 15, cellheight = 15,
+           labels_row = paste("Pop", population_no), main = title)
+}
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+
+```
+
+Initial gating of FMOs
+```{r}
+
+# read in the gating strategy
+ws <- list.files("../Data/flow/BCG_v_PBS", pattern = "AmyGating_intracellular.csv", full = TRUE)
+
+# only for viewing that read in 
+dtTemplate <- fread(ws, autostart = 1L) 
+
+initial_gate <- gatingTemplate(ws, autostart = 1L) 
+
+# read in the FMOs
+FMO_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs", 
+                       pattern = ".fcs", full = TRUE)
+
+# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+ncfs_FMO <- read.ncdfFlowSet(FMO_fcsFiles) 
+
+# apply gating set
+gs_FMO <- GatingSet(ncfs_FMO)
+
+# gate the samples
+gating(initial_gate, gs_FMO)
+
+# View the gates
+plotGate(gs_FMO[[1]])
+
+# Pull out the data
+FMO_gated_data <- getData(gs_FMO, "live") %>% 
+  as.flowSet() 
+
+#initialize dataframe where all data will go
+FMO_gated_df = data.frame()
+
+# convert each of the FMO files to a data frame, adding on the filename
+# bind all of the FMO files into one dataframe
+for (i in 1:length(FMO_gated_data)) {
+  FMO_data <- FMO_gated_data[[i]] %>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(FMO_gated_data[i])) 
+
+  FMO_gated_df <- rbind(FMO_gated_df, FMO_data)
+}
+
+# confirm that all of the files were read in correctly
+unique(FMO_gated_df$filename)
+
+# I accidently got CD4 into the CD4 FMO, so I had to redo it. I also tried CD69 to see if it was experiment-dependent, but CD69 problems are due to spillover
+
+# Add in the updated FMOS
+FMO_fcsFiles_redo <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs/June6_Redo", 
+                       pattern = ".fcs", full = TRUE)
+
+ncfs_FMO_redo <- read.ncdfFlowSet(FMO_fcsFiles_redo) 
+
+# apply gating set
+gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
+
+# gate the samples
+gating(initial_gate, gs_FMO_redo)
+
+# Pull out the data
+FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
+  as.flowSet() 
+
+FMO_gated_df_redo = data.frame()
+
+for (i in 1:length(FMO_gated_data_redo)) {
+  FMO_data_redo <- FMO_gated_data_redo[[i]] %>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(FMO_gated_data_redo[i])) 
+
+  FMO_gated_df_redo <- rbind(FMO_gated_df_redo, FMO_data_redo)
+}
+
+# when I redid the FMOs, I used lowercase for naming Zombie, so must convert to uppercase to match the previous samples
+FMO_gated_df_redo <- FMO_gated_df_redo %>%
+  select(-SSC.B.H, - SSC.B.A) %>%
+  dplyr::rename("Zombie.NIR.A" = "Zombie.Nir.A",
+         "Zombie.NIR.H" = "Zombie.Nir.H")
+
+# combine the new and old FMOs
+FMO_gated_df <- rbind(FMO_gated_df, FMO_gated_df_redo)
+
+
+```
+
+
+Pull out the individual FMOS
+```{r}
+
+CD3_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD3_20190218_153937_Unmixed.fcs")
+
+CD4_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD4_June_6_Redo_Unmixed.fcs")
+
+CD8_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD8_20190218_154138_Unmixed.fcs")
+
+CD27_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD27_20190218_154154_Unmixed.fcs")
+
+CD28_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD28_20190218_154012_Unmixed.fcs")
+
+CD44_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD44_20190218_154054_Unmixed.fcs")
+
+CD62L_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD62L_20190218_153953_Unmixed.fcs") 
+
+CD69_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD69_June_6_Redo_Unmixed.fcs")
+
+CD103_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD103_20190218_154045_Unmixed.fcs")
+
+CD122_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD122_20190218_154003_Unmixed.fcs")
+
+CD153_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CD153_20190218_154205_Unmixed.fcs")
+
+CTLA4_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_CTLA4_20190218_154146_Unmixed.fcs")
+
+FoxP3_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_FoxP3_20190218_154037_Unmixed.fcs") 
+
+IFN_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_IFN-G_20190218_154029_Unmixed.fcs")
+
+IL_10_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_IL-10_20190218_154102_Unmixed.fcs") 
+
+IL_17_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_IL-17_20190218_153945_Unmixed.fcs")
+
+KLRG1_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_KLRG1_20190218_154214_Unmixed.fcs") 
+
+PD1_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_PD1_20190218_154021_Unmixed.fcs")
+
+Sca1_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_Sca1_20190218_153845_Unmixed.fcs")
+
+TNF_FMO <- FMO_gated_df %>%
+  clean_FMO_after_gate() %>%
+  dplyr::filter(filename == "FMOs_TNF-a_20190218_154111_Unmixed.fcs")
+```
+
+
+Gating the sample data
+
+I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized. I will need to read them in separately and then rename one of the two so that the cases match
+
+```{r warning=FALSE, fig.height = 2, fig.width=2}
+
+fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/", 
+                       pattern = ".fcs", full = TRUE)
+
+# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+ncfs <- read.ncdfFlowSet(fcsFiles) 
+
+# apply gating set
+gs <- GatingSet(ncfs)
+
+# gate the samples
+gating(initial_gate, gs)
+
+# View the gates
+plotGate(gs[[12]])
+
+
+
+
+
+# Pull out the gated data
+gated_data <- getData(gs, "live") %>% 
+  as.flowSet() 
+
+# plot the gates to make sure they look okay
+for (i in 1:length(gs)) {
+  plotGate(gs[[i]])
+}
+
+# read in the D90 data
+D90_ws <- list.files("../Data/flow/BCG_v_PBS", 
+                     pattern = "AmyGating_intracellular_D90.csv", full = TRUE)
+
+D90_initial_gate <- gatingTemplate(D90_ws, autostart = 1L) 
+
+D90_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/D90", 
+                       pattern = ".fcs", full = TRUE)
+
+# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+D90_ncfs <- read.ncdfFlowSet(D90_fcsFiles) 
+
+# apply gating set
+D90_gs <- GatingSet(D90_ncfs)
+
+# gate the samples
+gating(D90_initial_gate, D90_gs)
+
+# Pull out the data
+D90_gated_data <- getData(D90_gs, "live") %>% 
+  as.flowSet() 
+
+# initialize the gated data df
+all_gated_df = data.frame()
+
+# convert the gated flow files to dataframes and add a filename column
+for (i in 1:length(gated_data)) {
+  all_data <- gated_data[[i]] %>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(gated_data[i])) 
+
+  all_gated_df <- rbind(all_gated_df, all_data)
+}
+
+# initialize the D90 gated data df
+D90_all_gated_df = data.frame()
+
+# convert the gated flow files to dataframes and add a filename column
+for (i in 1:length(D90_gated_data)) {
+  D90_all_data <- D90_gated_data[[i]] %>%
+    exprs() %>%
+    data.frame() %>%
+    mutate(filename = sampleNames(D90_gated_data[i])) 
+
+  D90_all_gated_df <- rbind(D90_all_gated_df, D90_all_data)
+}
+
+# remove parameters that are not found in D30 and D60 data and rename the D90 Zombie column
+D90_all_gated_df <- D90_all_gated_df %>%
+  select(Time, SSC.H, FSC.H, ends_with(".A"), 
+         `FSC.A`, `SSC.A`, -`SSC.B.A`, filename) %>%
+  rename("Zombie.NIR.A" = "Zombie.Nir.A")
+
+# combine the D30, D60, and D90 data into 1 dataframe
+all_gated_df <- rbind(all_gated_df, D90_all_gated_df)
+
+# confirm that all of the data is here
+unique(all_gated_df$filename)
+```
+
+Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the 99%.
+
+Remove FoxP3
+Remove CD69 - spreading from Sca1 makes the marker unusable
+Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all samples
+```{r}
+
+all_gated <- all_gated_df %>%
+  dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
+  mutate(Time = str_extract(filename, "D[0-9]*")) %>%
+  mutate(Group = str_extract(filename, "Group\\s[0-9]\\s[A-Z]")) %>%
+  unite(filename, c("Time", "Group")) %>%
+  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
+  select(ends_with(".A"), -`FSC.A`, filename) %>%
+  dplyr::rename(`FoxP3` = "APC.A",
+         `CD44` = "APC.Fire.750.A",
+        `CD103` =  "APC.R700.A",       
+         `CD3` = "Alexa.Fluor.532.A",
+         `Sca1` = "BB515.A",
+         `IL_10` = "BV421.A",
+         `CD4` = "BV480.A",
+         `CD69` = "BV510.A",
+         `CD8` = "BV570.A", 
+         `CTLA4` = "BV605.A",
+         `CD27` = "BV650.A",
+         `CD153` = "BV711.A",
+         `KLRG1` = "BV785.A",
+         `IL_17` = "PE.A",
+         `CD122` = "PE.Cy5.A",
+         `IFN` = "PE.Cy7.A", 
+         `CD62L` = "PE.Dazzle594.A",
+         `TNF` = "Pacific.Blue.A", 
+         `CD28` = "PE.Cy5.5.A",
+         `PD1` = "PerCP.eFluor.710.A") %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
+  mutate(CD3 = cut(CD3, breaks = c(min(CD3), quantile(CD3_FMO$CD3, 0.99), max(CD3)), 
+                       labels = c("0", "1")),
+         CD4 = cut(CD4, breaks = c(min(CD4), quantile(CD4_FMO$CD4, 0.99), max(CD4)),
+                       labels = c(0, 1)),
+         CD8 = cut(CD8, breaks = c(min(CD8), quantile(CD8_FMO$CD8, 0.99), max(CD8)),
+                       labels = c(0, 1)),
+         CD44 = cut(CD44, breaks = c(min(CD44), quantile(CD44_FMO$CD44, 0.99),
+                                         max(CD44)), labels = c(0, 1)),
+         CD103 = cut(CD103, breaks = c(min(CD103), quantile(CD103_FMO$CD103, 0.99),
+                                           max(CD103)), labels = c(0, 1)),
+         Sca1 = cut(Sca1, breaks = c(min(Sca1), quantile(Sca1_FMO$Sca1, 0.99),
+                                         max(Sca1)), labels = c(0, 1)),
+         IL_17 = cut(IL_17, breaks = c(min(IL_17), quantile(IL_17_FMO$IL_17, 0.99),
+                                         max(IL_17)),labels = c(0, 1)),
+         CD69 = cut(CD69, breaks = c(min(CD69), quantile(CD69_FMO$CD69, 0.99),
+                                         max(CD69)),labels = c(0, 1)),
+         CTLA4 = cut(CTLA4, breaks = c(min(CTLA4), quantile(CTLA4_FMO$CTLA4, 0.99),
+                                           max(CTLA4)),labels = c(0, 1)),
+         CD27 = cut(CD27, breaks = c(min(CD27), quantile(CD27_FMO$CD27, 0.99),
+                                         max(CD27)), labels = c(0, 1)),
+         CD153 = cut(CD153, breaks = c(min(CD153), quantile(CD153_FMO$CD153, 0.99), 
+                                           max(CD153)),labels = c(0, 1)),
+         KLRG1 = cut(KLRG1, breaks = c(min(KLRG1), quantile(KLRG1_FMO$KLRG1, 0.99), 
+                                           max(KLRG1)), labels = c(0, 1)),
+         IFN = cut(IFN, breaks = c(min(IFN), quantile(IFN_FMO$IFN, 0.99), 
+                                           max(IFN)), labels = c(0, 1)),
+         FoxP3 = cut(FoxP3, breaks = c(min(FoxP3), quantile(FoxP3_FMO$FoxP3, 0.99), 
+                                           max(FoxP3)), labels = c(0, 1)),
+         CD122 = cut(CD122, breaks = c(min(CD122), quantile(CD122_FMO$CD122, 0.99), 
+                                           max(CD122)), labels = c(0, 1)),
+         PD1 = cut(PD1, breaks = c(min(PD1), quantile(PD1_FMO$PD1, 0.99), 
+                                       max(PD1)), labels = c(0, 1)),
+         CD62L = cut(CD62L, breaks = c(min(CD62L), quantile(CD62L_FMO$CD62L, 0.99),
+                                           max(CD62L)), labels = c(0, 1)),
+         IL_10 = cut(IL_10, breaks = c(min(IL_10), 
+                                             quantile(IL_10_FMO$IL_10, 0.99),
+                                             max(IL_10)), labels = c(0, 1)),
+         CD28 = cut(CD28, breaks = c(min(CD28), quantile(CD28_FMO$CD28, 0.99),
+                                         max(CD28)), labels = c(0, 1)),
+         TNF = cut(TNF, breaks = c(min(TNF), quantile(TNF_FMO$TNF, 0.99),
+                                           max(TNF)), labels = c(0, 1))) %>%
+  select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69) %>%
+  mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
+  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF, filename) %>%
+  dplyr::mutate(cell_no = n()) %>%
+  unique() %>%
+  ungroup() %>%
+  dplyr::group_by(filename) %>%
+  dplyr::mutate(total_count_by_file = sum(cell_no),
+         percentage = (100*cell_no / total_count_by_file)) %>%
+  ungroup() 
+
+```
+
+
+Run t-SNE on FE
+
+color_for_facets <- phenotype_data %>%
+  select(lineage, population) %>%
+  mutate(col = ifelse(lineage == "Double Negative", "darkturquoise", 
+                      ifelse(lineage == "T Helper", "plum3",
+                             ifelse(lineage == "Cytotoxic T", "hotpink", 
+                                    ifelse(lineage == "Double Positive", "orange", "brown")))))
+                                    
+                                    
+                                    phenotype_data <- sample_populations %>%
+  mutate_all(~as.numeric.factor(.)) %>%
+  mutate(cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown")))))
+```{r}
+start_FE <- Sys.time()
+all_gated_tSNE <- all_gated %>%
+  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  unite(lineage_cell, c(lineage, cell), sep = " ") %>%
+  select(filename, lineage_cell, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF)
+
+
+colors = rainbow(length(unique(all_gated_tSNE$lineage_cell)))
+names(colors) = unique(all_gated_tSNE$lineage_cell)
+library(Rtsne)
+tsne_FE <- Rtsne(all_gated_tSNE[,-c(1:2)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
+
+## Plotting
+data_plot_FE <- as.data.frame(tsne_FE$Y)
+colnames(data_plot_FE) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot_FE, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE$lineage_cell)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) +
+  xlab("tSNE 1") +
+  ylab("tSNE 2") +
+  labs(color = "Lineage") +
+  ggtitle("Feature Engineered t-SNE projection") + 
+  theme_bw()
+
+end_FE <- Sys.time()
+
+end_FE - start_FE
+```
+
+t-SNE on data without FE
+
+```{r}
+normal_tSNE <- all_gated_df %>%
+  dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
+  mutate(Time = str_extract(filename, "D[0-9]*")) %>%
+  mutate(Group = str_extract(filename, "Group\\s[0-9]\\s[A-Z]")) %>%
+  unite(filename, c("Time", "Group")) %>%
+  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
+  select(ends_with(".A"), -`FSC.A`, filename) %>%
+  dplyr::rename(`FoxP3` = "APC.A",
+         `CD44` = "APC.Fire.750.A",
+        `CD103` =  "APC.R700.A",       
+         `CD3` = "Alexa.Fluor.532.A",
+         `Sca1` = "BB515.A",
+         `IL_10` = "BV421.A",
+         `CD4` = "BV480.A",
+         `CD69` = "BV510.A",
+         `CD8` = "BV570.A", 
+         `CTLA4` = "BV605.A",
+         `CD27` = "BV650.A",
+         `CD153` = "BV711.A",
+         `KLRG1` = "BV785.A",
+         `IL_17` = "PE.A",
+         `CD122` = "PE.Cy5.A",
+         `IFN` = "PE.Cy7.A", 
+         `CD62L` = "PE.Dazzle594.A",
+         `TNF` = "Pacific.Blue.A", 
+         `CD28` = "PE.Cy5.5.A",
+         `PD1` = "PerCP.eFluor.710.A") %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
+  select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69)
+
+
+tsne_normal <-Rtsne(normal_tSNE[,-19], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
+
+## Plotting
+data_plot_normal <- as.data.frame(tsne_normal$Y)
+colnames(data_plot_normal) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot_normal, aes(x = tSNE_1, y = tSNE_2)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) + 
+  ggtitle("Normal t-SNE projection") + 
+  theme_bw()
+```
+

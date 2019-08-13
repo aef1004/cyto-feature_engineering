@@ -732,3 +732,123 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   ylab("Manual Percent") +
   theme_classic()
 ```
+
+
+Try t-SNE
+
+```{r}
+all_gated_tSNE <- all_gated %>%
+  select(filename, HLA_DR, CD19, CD3, CD45, CD27)
+
+colors = rainbow(length(unique(all_gated_tSNE$filename)))
+names(colors) = unique(all_gated_tSNE$filename)
+
+tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500)
+
+## Plotting
+data_plot <- as.data.frame(tsne$Y)
+colnames(data_plot) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot, aes(x = tSNE_1, y = tSNE_2, col = colors)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) + 
+  ggtitle("t-SNE projection with FlowSOM clustering") + 
+  theme_bw()
+```
+
+Try to add color to t-SNE
+```{r}
+#https://support.bioconductor.org/p/60421/
+library(premessa)
+gated_data <- getData(gs, "leukocytes") %>% 
+  as_flowframe() #https://rdrr.io/github/ParkerICI/premessa/man/as_flowFrame.html
+
+gated_data[[1]]
+
+exprs(gated_data) <- all_gated
+
+#####
+
+data_plot <- as.data.frame(tsne$Y)
+colnames(data_plot) <- c("tSNE_1", "tSNE_2")
+
+head(data_plot)
+dim(data_plot)  ## should match length of labels_plot (otherwise labels will not match up correctly)
+
+data_plot[, "cluster"] <- as.factor(labels_plot)
+
+head(data_plot)
+
+
+# plot 2-dimensional t-SNE projection
+
+ggplot(data_plot, aes(x = tSNE_1, y = tSNE_2, , color = cluster)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) + 
+  ggtitle("t-SNE projection with FlowSOM clustering") + 
+  theme_bw()
+
+```
+
+Try FlowSOM
+
+```{r}
+# Coerce ncdfFlowSet to flowSet
+# flowSet contains 10 experiments (samples) with column names of the markers/parameters on the flow cytometer
+# this is an S4 object
+gated_data_flowSOM <- getData(gs, "live") %>% 
+  as.flowSet()
+
+# Adult FlowSOM
+# FlowSOM class possibly in list form with $data seems to contain the markers as column labels and values of the markers, but there are negative values.. could $scaled.center contain the average of each of the markers to normalize values?
+fSOM_all_gated <- ReadInput(gated_data, compensate = TRUE, 
+                              transform = TRUE, scale = TRUE) 
+
+# FlowSOM class added following
+# - $map$codes : 100 rows = 100 nodes, average value?
+# - $map$mapping : [ ,1] node where each cell is assigned, [ , 2] ??
+# - $map$medianValues : 100 rows = 100 nodes, median value per node
+# - $map$sdValue : 100 rows = 100 nodes, standard devation from ??
+fSOM_all_gated  <-  BuildSOM(fSOM_all_gated , colsToUse = c(27:45))
+
+# FlowSOM class added following
+# - $MST$graph : edges to connect nodes, ex. node 1 -- node 4
+# - $MST$l : 100 rows = 100 nodes, ???
+# - $MST$size : 100 rows = 100 nodes, size of nodes for number of cells in each node??
+fSOM_all_gated  <- BuildMST(fSOM_all_gated)
+
+# integer class : vector containing the 20 metaclusters to add to appropriate nodes
+metacl <- MetaClustering(fSOM_all_gated $map$codes, 
+                                     "metaClustering_consensus", nClus = 20)
+
+PlotStars(fSOM_all_gated , backgroundValues = as.factor(metacl), main = "All Gated Concat FlowSOM")
+```
+
+Plot CD3 v. CD19
+
+```{r}
+
+
+CD3_CD19_for_plot <- all_gated_df %>%
+  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
+  select(ends_with(".A"), -`FSC.A`, filename) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A")  %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+
+ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("CD19") +
+   geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3")) +
+  geom_hline(yintercept = gate_mindensity_amy(CD19_sc, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 20))
+```
+
