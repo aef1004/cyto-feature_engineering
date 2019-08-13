@@ -1202,24 +1202,45 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
 
 Want to try to add different colors to facets
 ```{r}
-p <- ggplot(pops_CFUs, aes(percentage, CFU)) +
-  geom_point(color = "#56C667FF") +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  geom_rect()
+
+formula = y~x
+
+library(ggpmisc)
+ggplot(pops_CFUs, aes(percentage, CFU)) +
+  geom_point() +
   facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  geom_smooth(method = "lm", formula = formula, se = FALSE, color = "#3F4788FF") +
+  stat_poly_eq(formula = formula, parse = TRUE, size = 2) +
+    stat_fit_glance(method = 'lm', method.args = list(formula= formula), geom = 'text',
+                    aes(label = paste("p-value = ", signif(..p.value.., digits = 4), sep = "")),
+                        label.x.nps = "right", label.y.npc = 0.35, size = 3) +
   ylab("log10 CFU") +
   ggtitle("Population and CFU Linear regression") +
   theme(axis.text.x = element_text(size = 9, hjust = 1),
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
-
+  
+  
+  
+aes(label = paste(..r.label..)),
+               label.x.npc = 0.15,
 ```
 
 
 
 
+```{r}
+ggplot(pops_CFUs, aes(percentage, CFU)) +
+  geom_point() +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  geom_smooth(method = "lm", formula = formula, se = FALSE, color = "#3F4788FF") +
+  stat_poly_eq(formula = formula, parse = TRUE, size = 2) +
+  stat_fit_glance(method = "lm", method.args = list(formula = formula),
+                  label.x = "right", label.y= "bottom",
+                  aes(label = paste("p-value", signif(..p.value.., digits = 2))), size = 2)
+  
+```
 
 
 
