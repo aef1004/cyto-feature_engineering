@@ -850,5 +850,62 @@ ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
   theme_gray()+
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 20))
+
+
+
+individual_for_plot <- all_gated_df %>%
+  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
+  select(ends_with(".A"), -`FSC.A`, filename) %>%
+  dplyr::rename(`HLA_DR` = "FITC.A",
+         `CD19` = "PE.A",
+        `CD3` =  "PE.Cy5.A",       
+         `CD45` = "PE.Cy7.A",
+         `CD27` = "APC.A")  %>%
+  na.omit() %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+
+
+ggplot(individual_for_plot, aes(x = CD3, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC") +
+   geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD3")) +
+  theme_gray()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 20))
+
+
+ggplot(individual_for_plot, aes(x = CD19, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC") +
+  geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 20))
+
+ggplot(individual_for_plot, aes(x = CD3, y = CD19)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("CD19") +
+   geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD3")) +
+  geom_hline(yintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 20))
+
+
+ggplot(individual_for_plot, aes(x = CD19)) +
+   geom_density() +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC") +
+  geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 20))
 ```
 
