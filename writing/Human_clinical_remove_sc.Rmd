@@ -2,6 +2,8 @@
 title: "Human_clinical_remove_sc"
 output: html_document
 ---
+
+**THIS IS THE ONE**
 Use mindensity for the sample alone - nothing else
 Also using logicle
 
@@ -654,13 +656,19 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
 Try t-SNE
 
 ```{r}
-all_gated_tSNE <- all_gated %>%
-  select(filename, HLA_DR, CD19, CD3, CD45, CD27)
+# this should be just the 36 populations that are present
+all_gated_tSNE  <- all_gated %>%
+  select(filename, HLA_DR, CD19, CD3, CD45, CD27) %>%
+  group_by(HLA_DR, CD19, CD3, CD45, CD27) %>%
+  unique() %>%
+  ungroup()
 
 colors = rainbow(length(unique(all_gated_tSNE$filename)))
 names(colors) = unique(all_gated_tSNE$filename)
 
-tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500)
+library(Rtsne)
+# remove duplicates
+tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
 
 ## Plotting
 data_plot <- as.data.frame(tsne$Y)
@@ -741,30 +749,3 @@ metacl <- MetaClustering(fSOM_all_gated $map$codes,
 PlotStars(fSOM_all_gated , backgroundValues = as.factor(metacl), main = "All Gated Concat FlowSOM")
 ```
 
-Plot CD3 v. CD19
-
-```{r}
-
-
-CD3_CD19_for_plot <- all_gated_df %>%
-  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
-  select(ends_with(".A"), -`FSC.A`, filename) %>%
-  dplyr::rename(`HLA_DR` = "FITC.A",
-         `CD19` = "PE.A",
-        `CD3` =  "PE.Cy5.A",       
-         `CD45` = "PE.Cy7.A",
-         `CD27` = "APC.A")  %>%
-  na.omit() %>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
-
-ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("CD19") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
-  geom_hline(yintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
-```
