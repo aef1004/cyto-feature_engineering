@@ -120,6 +120,10 @@ ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
        font.label = list(size = 30, face = "plain")) +
 
 ```{r fig.width = 3, fig.height = 1.2}
+lung_CFU <- lung_CFU %>%
+  mutate(Group = str_replace(Group, "PBS", "Control"),
+         Group = str_replace(Group, "BCG", "Vaccinated"))
+
 ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   geom_jitter(width = 0.2) +
   facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 

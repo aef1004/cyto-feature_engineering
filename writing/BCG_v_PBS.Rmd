@@ -1049,7 +1049,9 @@ pops_for_plots_average <- sample_populations_all_groups %>%
          Group = str_replace(Group, "2", "BCG")) %>%
   dplyr::mutate(Timepoint = str_replace(Timepoint, "D30", "30"),
          Timepoint = str_replace(Timepoint, "D60", "60"),
-         Timepoint = str_replace(Timepoint, "D90", "90"))
+         Timepoint = str_replace(Timepoint, "D90", "90")) %>%
+  mutate(Group = str_replace(Group, "PBS", "Control"),
+         Group = str_replace(Group, "BCG", "Vaccinated"))
 
 facets_for_timeseries <- left_join(pops_for_plots_average, color_for_facets, by = "population")
 
@@ -1091,12 +1093,12 @@ ggplot(facets_for_vacc_v_unvacc, aes(x = Group,
             ymin = -Inf,ymax = Inf, alpha = .6) +
   geom_bar(stat = "identity") +
   facet_wrap("population", scales = "free", ncol = 9) +
-  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  scale_fill_manual(values = c("Control" = "black", "Vaccinated" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
   xlab("Vaccination Status") +
   ylab("Average Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
   theme_gray() +
-    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+    theme(axis.text.x = element_text(angle = 40, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
         strip.text.x = element_text(size = 10),
         axis.title = element_text(size = 20),
@@ -1119,7 +1121,9 @@ facets_for_boxplot <- sample_populations_all_groups %>%
   dplyr::mutate(Timepoint = str_replace(Timepoint, "D30", "30"),
          Timepoint = str_replace(Timepoint, "D60", "60"),
          Timepoint = str_replace(Timepoint, "D90", "90")) %>%
-  filter(Timepoint == 30)
+  filter(Timepoint == 30) %>%
+  mutate(Group = str_replace(Group, "PBS", "Control"),
+         Group = str_replace(Group, "BCG", "Vaccinated"))
 
 # add background colors
 facets_for_boxplot <- left_join(facets_for_boxplot, color_for_facets, by = "population")
@@ -1135,12 +1139,12 @@ ggplot(facets_for_boxplot, aes(x = Group,
             ymin = -Inf,ymax = Inf, alpha = .2) +
   geom_boxplot() +
   facet_wrap("population", scales = "free", ncol = 9) +
-  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  scale_fill_manual(values = c("Control" = "black", "Vaccinated" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
   xlab("Vaccination Status") +
   ylab("Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
   theme_gray() +
-    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+    theme(axis.text.x = element_text(angle = 40, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
         strip.text.x = element_text(size = 10),
         axis.title = element_text(size = 20),
@@ -1156,12 +1160,12 @@ ggplot(facets_for_boxplot, aes(x = Group,
             ymin = -Inf,ymax = Inf, alpha = .2) +
   geom_violin() +
   facet_wrap("population", scales = "free", ncol = 9) +
-  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  scale_fill_manual(values = c("Control" = "black", "Vaccinated" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
   xlab("Vaccination Status") +
   ylab("Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
   theme_gray() +
-    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+    theme(axis.text.x = element_text(angle = 40, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
         strip.text.x = element_text(size = 10),
         axis.title = element_text(size = 20),
@@ -1343,6 +1347,8 @@ comparison %>%
          `% Based on Automated Pipeline` = percent_pipeline,
          `Absolute Difference` = absolute_difference,
          `Average Difference` = average_difference) %>%
+  mutate(Group = str_replace(Group, "PBS", "Control"),
+         Group= str_replace(Group, "BCG", "Vaccinated")) %>%
   select(Timepoint, Group, Number, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
   kable(align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
