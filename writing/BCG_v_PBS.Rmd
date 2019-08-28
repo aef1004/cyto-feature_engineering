@@ -1026,6 +1026,7 @@ mtext("Cell Lineage", at=0.2, cex=2)
 Data visualization
 
 - time series
+- treated v. untreated
 
 ```{r fig.width = 6, fig.height= 3}
 color_for_facets <- phenotype_data %>%
@@ -1079,9 +1080,99 @@ ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "
         legend.key.size = unit(1.5, "line"))
 
 
+# Vaccinated v. unvaccinated for Day 30 bar
+facets_for_vacc_v_unvacc <- facets_for_timeseries %>%
+  filter(Timepoint == 30)
+  
+#adding geom_rect messes the data up
+ggplot(facets_for_vacc_v_unvacc, aes(x = Group,
+                                 y = average_percent, group = Group, fill = Group)) +
+  geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = .6) +
+  geom_bar(stat = "identity") +
+  facet_wrap("population", scales = "free", ncol = 9) +
+  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  xlab("Vaccination Status") +
+  ylab("Average Percent of Cells") +
+  ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
+  theme_gray() +
+    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20),
+        legend.text = element_text(size=18),
+        legend.key.size = unit(1.5, "line"),
+        legend.position = "none")
 
+
+# boxplot
+facets_for_boxplot <- sample_populations_all_groups %>%
+  separate(filename, into = c("Timepoint", "Mouse", "Group", "Number"), sep = "_") %>%
+  dplyr::group_by(population, Timepoint, Group) %>%
+  dplyr::mutate(average_percent = mean(percentage)) %>%
+  select(-Number, -Mouse) %>%
+  ungroup() %>%
+  unique() %>%
+  dplyr::mutate(Group = str_replace(Group, "1", "PBS"),
+         Group = str_replace(Group, "2", "BCG")) %>%
+  dplyr::mutate(Timepoint = str_replace(Timepoint, "D30", "30"),
+         Timepoint = str_replace(Timepoint, "D60", "60"),
+         Timepoint = str_replace(Timepoint, "D90", "90")) %>%
+  filter(Timepoint == 30)
+
+# add background colors
+facets_for_boxplot <- left_join(facets_for_boxplot, color_for_facets, by = "population")
+
+# convert populations to factor to put in order for the plot
+facets_for_boxplot$population <-  factor(facets_for_boxplot$population, 
+                                    levels = paste0("Pop", c(1:length(unique(facets_for_boxplot$population)))))
+
+
+ggplot(facets_for_boxplot, aes(x = Group,
+                                 y = percentage, group = Group, fill = Group)) +
+  geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = .2) +
+  geom_boxplot() +
+  facet_wrap("population", scales = "free", ncol = 9) +
+  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  xlab("Vaccination Status") +
+  ylab("Percent of Cells") +
+  ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
+  theme_gray() +
+    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20),
+        legend.text = element_text(size=18),
+        legend.key.size = unit(1.5, "line"),
+        legend.position = "none")
+
+
+ggplot(facets_for_boxplot, aes(x = Group,
+                                 y = percentage, group = Group, fill = Group)) +
+  geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = .2) +
+  geom_violin() +
+  facet_wrap("population", scales = "free", ncol = 9) +
+  scale_fill_manual(values = c("BCG" = "black", "PBS" = "white", "darkturquoise" = "darkturquoise",  "hotpink" = "hotpink","orange" = "orange","plum3" = "plum3")) +
+  xlab("Vaccination Status") +
+  ylab("Percent of Cells") +
+  ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
+  theme_gray() +
+    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20),
+        legend.text = element_text(size=18),
+        legend.key.size = unit(1.5, "line"),
+        legend.position = "none")
 ```
-
+  geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = .6) +geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) +
 Data Visualization
 
 - CFU Correlation
