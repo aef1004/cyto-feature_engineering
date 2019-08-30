@@ -1246,7 +1246,7 @@ ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = 0.2) + 
   scale_fill_identity() +
-  geom_point(color = "black") +
+  geom_point(color = "black") 
 
 D30_pops_CFUs <- pops_CFUs %>%
   dplyr::filter(`Timepoint` == 30)
