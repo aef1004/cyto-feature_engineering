@@ -486,7 +486,7 @@ Remove CD69 - spreading from Sca1 makes the marker unusable
 Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all samples
 ```{r}
 
-all_gated <- all_gated_df %>%
+all_gated_clean <- all_gated_df %>%
   dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
   mutate(Time = str_extract(filename, "D[0-9]*")) %>%
   mutate(Group = str_extract(filename, "Group\\s[0-9]\\s[A-Z]")) %>%
@@ -514,7 +514,12 @@ all_gated <- all_gated_df %>%
          `CD28` = "PE.Cy5.5.A",
          `PD1` = "PerCP.eFluor.710.A") %>%
   na.omit() %>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
+  dplyr::filter(`SSC.A` != max(`SSC.A`))
+
+all_gated_cell_ID <- all_gated_clean %>%
+  mutate(cell_ID = c(1:nrow(all_gated_clean)))
+  
+all_gated <- all_gated_cell_ID %>%
   mutate(CD3 = cut(CD3, breaks = c(min(CD3), quantile(CD3_FMO$CD3, 0.99), max(CD3)), 
                        labels = c("0", "1")),
          CD4 = cut(CD4, breaks = c(min(CD4), quantile(CD4_FMO$CD4, 0.99), max(CD4)),
@@ -570,6 +575,44 @@ all_gated <- all_gated_df %>%
   ungroup() 
 
 ```
+
+
+
+```{r}
+# filter to the 36 populations in the smaller plot
+all_gated_tSNE <- all_gated %>%
+  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  unite(lineage_cell, c(lineage, cell), sep = " ")
+
+sample_populations <- all_gated_tSNE %>%
+  dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
+  select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
+  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF) %>%
+  unique() %>%
+  ungroup() 
+
+# need to add back in the cell_ID
+left_join(all_gated_tSNE_36_pops_ID, all_gated, by = c("CD3", "CD4", "CD8", "CD44", "CD103", "Sca1", "IL_17", "CTLA4", "CD27", 
+           "CD153", "KLRG1", "IFN",  "CD122", "PD1", "CD62L", "IL_10", "CD28", "TNF"))
+
+# add back in the original data
+left_join(all_gated_tSNE_36_pops_ID, all_gated_cell_ID, by = "cell_ID")
+
+
+```
+
+
+
 
 
 Run t-SNE on FE
@@ -687,10 +730,53 @@ all_gated_tSNE_36_pops_lineage <- all_gated %>%
                                      "Unknown"))))) %>%
   select(filename, lineage, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
-           TNF) %>%
-  unique()
+           TNF) 
 
+# change the 1's to range from 1 to 1.1 and o's from 0 to 0.1 to see if we can get a better tSNE plot
+library(data.table)
+setDT(all_gated_tSNE_36_pops_lineage)[CD3 == 0, CD3 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD3 == 1, CD3 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD4 == 0, CD4 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD4 == 1, CD4 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD8 == 0, CD8 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD8 == 1, CD8 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD44 == 0, CD44 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD44 == 1, CD44 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD103 == 0, CD103 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD103 == 1, CD103 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[Sca1 == 0, Sca1 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[Sca1 == 1, Sca1 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IL_17 == 0, IL_17 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IL_17 == 1, IL_17 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CTLA4 == 0, CTLA4 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CTLA4 == 1, CTLA4 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD27 == 0, CD27 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD27 == 1, CD27 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD153 == 0, CD153 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD153 == 1, CD153 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[KLRG1 == 0, KLRG1 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[KLRG1 == 1, KLRG1 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IFN == 0, IFN := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IFN == 1, IFN := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD122 == 0, CD122 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD122 == 1, CD122 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[PD1 == 0, PD1 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[PD1 == 1, PD1 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD62L == 0, CD62L := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD62L == 1, CD62L := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IL_10 == 0, IL_10 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[IL_10 == 1, IL_10 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD28 == 0, CD28 := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[CD28 == 1, CD28 := runif(.N, min=1.0001, max=1.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[TNF == 0, TNF := runif(.N, min=0.0001, max=0.01)]
+setDT(all_gated_tSNE_36_pops_lineage)[TNF == 1, TNF := runif(.N, min=1.0001, max=1.01)]
 
+# tried doing this, but it won't work (also tried mutate_if)
+all_gated_tSNE_36_pops_lineage <- all_gated_tSNE_36_pops_lineage %>%
+  mutate_at("CD4", funs(replace(., 0, runif(.N, min = 0.01, max = 0.1))))
+  mutate_at("CD3", funs(replace(., 1, runif(nrow(all_gated), min = 1, max = 1.1)))) 
+  
+colnames(all_gated_tSNE_36_pops_lineage)
 colors = rainbow(length(unique(all_gated_tSNE_36_pops_lineage$lineage)))
 names(colors) = unique(all_gated_tSNE_36_pops_lineage$lineage)
 
@@ -708,6 +794,10 @@ ggplot(data_plot_FE_36_pops_lineage, aes(x = tSNE_1, y = tSNE_2, col = all_gated
   ggtitle("Feature Engineered t-SNE projection") + 
   theme_bw()
 ```
+
+
+
+
 
 t-SNE on data without FE
 Using the feature engineered data from before to analyze this (with the thresholds to name the data)
