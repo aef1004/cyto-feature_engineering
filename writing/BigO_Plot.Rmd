@@ -1,0 +1,32 @@
+---
+title: "Big O"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+x <- c(1:10)
+
+n <- x
+n2 <- c(x^2)
+
+big_o <- data.frame(x, n, n2) 
+
+
+ggplot(big_o, aes(x, n2)) +
+  geom_line() +
+  geom_abline(slope = 1, intercept = 0) +
+  ggtitle("Memory Complexity") +
+  xlab("Amount of Input Data") +
+  ylab("Time to Run") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+```
+
