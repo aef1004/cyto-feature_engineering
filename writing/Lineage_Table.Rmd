@@ -1,0 +1,47 @@
+---
+title: "Lineage Table"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(kableExtra)
+```
+
+
+```{r}
+cell_lineage <- c("Double Negative", "T helper", "Cytotoxic T",  "Double Positive")
+markers_lineage <- c("CD3+ CD4- CD8-", "CD3+ CD4+ CD8-", "CD3+ CD4- CD8+", "CD3+ CD4+ CD8+")
+
+T_cell_type <- c("Naive", "Effector","Central Memory", "Stem-cell Like Memory", "Resident")
+markers_cell_type <- c("CD44- CD62L+ Sca1-", "CD44+ CD62L-", "CD44+ CD62L+", "CD44- CD62L+ Sca1+", "CD103+")
+
+lineage_df <- data.frame(cell_lineage, markers_lineage)
+
+cell_type_df <- data.frame(T_cell_type, markers_cell_type)
+```
+
+```{r}
+lineage_df %>%
+  mutate(`Cell Lineage` = cell_lineage,
+         `Associated Markers` = markers_lineage) %>%
+  select(-cell_lineage, -markers_lineage) %>%
+  kable(align = "l") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0:nrow(lineage_df), color = "black") %>%
+  print()
+
+
+cell_type_df %>%
+  mutate(`Cell Type` = T_cell_type,
+         `Associated Markers` = markers_cell_type) %>%
+  select(-T_cell_type, -markers_cell_type) %>%
+  kable(align = "l") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0:nrow(cell_type_df), color = "black") %>%
+  print()
+```
+

@@ -485,7 +485,7 @@ p4 <- ggplot(CD45_sc, aes(x = CD45, y = SSC.A)) +
   theme_gray()+
   theme(axis.text = element_text(size =12),
         axis.title = element_text(size = 20))
-
+3
 p5 <- ggplot(CD27_sc, aes(x = CD27, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +

@@ -1,10 +1,11 @@
 ---
-title: "Colombia Dataset"
-author: "Amy Fox"
+title: "Human_clinical_remove_sc"
 output: html_document
 ---
 
-This dataset includes ?????
+**THIS IS THE ONE**
+Use mindensity for the sample alone - nothing else
+Also using logicle
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -352,9 +353,11 @@ phenotype_heatmap <- function(csv_file, population_no, title) {
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
-The single color (sc) samples are read in and initially gated on singlets and leukocytes (there is no live/dead dye in this panel).
-```{r}
 
+Initial gating of sample data
+**Note I removed the redo of the logicle so that it uses the same logicle as above
+
+```{r warning = FALSE, fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
 ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
 
@@ -363,148 +366,6 @@ dtTemplate <- fread(ws, autostart = 1L)
 
 initial_gate <- gatingTemplate(ws, autostart = 1L) 
 
-# read in the single color data
-sc_fcsFiles <- list.files("../Data/flow/Human_Clinical/Single_Colors", 
-                       pattern = ".fcs", full = TRUE)
-
-
-# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
-ncfs_sc <- read.ncdfFlowSet(sc_fcsFiles) 
-
-# apply gating set
-gs_sc <- GatingSet(ncfs_sc)
-
-# gate the samples
-gating(initial_gate, gs_sc)
-
-# View the gates
-plotGate(gs_sc[[1]])
-
-# Pull out the gated data
-sc_gated_data <- getData(gs_sc, "leukocytes") %>% 
-  as.flowSet() 
-
-```
-
-I then performed a logicle transformation. This is so that we can see the feature engineered cutoffs on a plot.
-
-- normally FSC and SSC stay linear while the markers are logicle transformed
-
-```{r fig.width = 9, fig.height=5, warning=FALSE}
-
-#initialize dataframe where all data will go
-sc_gated_df_test = data.frame()
-
-# logicle transform of data in the listed channels 
-# convert each of the FMO files to a data frame, adding on the filename
-# bind all of the FMO files into one dataframe
-for (i in 1:length(sc_gated_data)) {
-  lgcl <- estimateLogicle(sc_gated_data[[i]], channels = c( "FITC-A", "PE-A",
-                                                 "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
-  
-  sc_data_test <- transform(sc_gated_data[[i]], lgcl) %>%
-    exprs() %>%
-    data.frame() %>%
-    mutate(filename = sampleNames(sc_gated_data[i])) 
-
-  sc_gated_df_test <- rbind(sc_gated_df_test, sc_data_test)
-}
-
-# confirm that all of the files were read in 
-unique(sc_gated_df_test$filename)
-
-
-```
-
-Pull out single colors
-```{r}
-
-CD3_sc <- sc_gated_df_test %>%
-  clean_sc_after_gate() %>%
-  dplyr::filter(filename == "Specimen_001_cd3_004.fcs")
-
-CD19_sc <- sc_gated_df_test %>%
-  clean_sc_after_gate() %>%
-  dplyr::filter(filename == "Specimen_001_cd19_003.fcs")
-
-CD27_sc <- sc_gated_df_test %>%
-  clean_sc_after_gate() %>%
-  dplyr::filter(filename == "Specimen_001_cd27_006.fcs")
-
-CD45_sc <- sc_gated_df_test %>%
-  clean_sc_after_gate() %>%
-  dplyr::filter(filename == "Specimen_001_cd45_005.fcs")
-
-HLA_DR_sc <- sc_gated_df_test %>%
-  clean_sc_after_gate() %>%
-  dplyr::filter(filename == "Specimen_001_hla-dr_002.fcs")
-
-
-```
-
-Feature engineering single colors and plot
-
-I will use OpenCyto to find the minimum density between the two peaks (positive and negative) to develop a cutoff. 
-```{r fig.width = 9, fig.height=5, warning=FALSE}
-
-p1 <-  ggplot(HLA_DR_sc, aes(x = HLA_DR, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(HLA_DR_sc, "HLA_DR")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
-
-p2 <- ggplot(CD19_sc, aes(x = CD19, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(CD19_sc, "CD19"))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
-
-p3 <- ggplot(CD3_sc, aes(x = CD3, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3"))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
-
-p4 <- ggplot(CD45_sc, aes(x = CD45, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(CD45_sc, "CD45"))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
-
-p5 <- ggplot(CD27_sc, aes(x = CD27, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(CD27_sc, "CD27"))+
-  scale_x_log10() +
-  scale_y_log10() +
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
-
-grid.arrange(p1, p2, p3, p4, p5, 
-             nrow = 2)
-```
-
-Initial gating of sample data
-```{r}
 fcsFile <- list.files("../Data/flow/Human_Clinical/", 
                        pattern = ".fcs", full = TRUE)
 
@@ -531,16 +392,74 @@ all_gated_df = data.frame()
 # convert each of the FMO files to a data frame, adding on the filename
 # bind all of the FMO files into one dataframe (though there is only 1 file)
 for (i in 1:length(gated_data)) {
-   lgcl_data <- estimateLogicle(gated_data[[i]], channels = c( "FITC-A", "PE-A",
+  lgcl <- estimateLogicle(gated_data[[i]], channels = c( "FITC-A", "PE-A",
                                                  "PE-Cy5-A", "PE-Cy7-A", "APC-A"))
   
-   gated_data_test <- transform(gated_data[[i]], lgcl)%>%
+  gated_data_test <- transform(gated_data[[i]], lgcl) %>%
     exprs() %>%
     data.frame() %>%
     mutate(filename = sampleNames(gated_data[i])) 
 
   all_gated_df <- rbind(all_gated_df, gated_data_test)
 }
+
+
+all_gated_for_plot <- all_gated_df %>%
+  clean_sc_after_gate()
+
+
+ 
+p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "HLA_DR")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD45")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlim(-1, 5) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD27")) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20))
+
+grid.arrange(p1, p2, p3, p4, p5, 
+             nrow = 2)
 
 
 ```
@@ -559,15 +478,15 @@ all_gated <- all_gated_df %>%
          `CD27` = "APC.A")  %>%
   na.omit() %>%
   dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
-  mutate(HLA_DR = cut(HLA_DR, breaks = c(min(HLA_DR), gate_mindensity_amy(HLA_DR_sc, "HLA_DR"), max(HLA_DR)), 
+  mutate(HLA_DR = cut(HLA_DR, breaks = c(min(HLA_DR), gate_mindensity_amy(all_gated_for_plot, "HLA_DR"), max(HLA_DR)), 
                        labels = c("0", "1")),
-         CD19 = cut(CD19, breaks = c(min(CD19), gate_mindensity_amy(CD19_sc, "CD19"), max(CD19)),
+         CD19 = cut(CD19, breaks = c(min(CD19), gate_mindensity_amy(all_gated_for_plot, "CD19"), max(CD19)),
                        labels = c(0, 1)),
-         CD3 = cut(CD3, breaks = c(min(CD3), gate_mindensity_amy(CD3_sc, "CD3"), max(CD3)),
+         CD3 = cut(CD3, breaks = c(min(CD3), gate_mindensity_amy(all_gated_for_plot, "CD3"), max(CD3)),
                        labels = c(0, 1)),
-         CD45 = cut(CD45, breaks = c(min(CD45), gate_mindensity_amy(CD45_sc, "CD45"),  max(CD45)), 
+         CD45 = cut(CD45, breaks = c(min(CD45), gate_mindensity_amy(all_gated_for_plot, "CD45"),  max(CD45)), 
                     labels = c(0, 1)),
-         CD27 = cut(CD27, breaks = c(min(CD27), gate_mindensity_amy(CD27_sc, "CD27"), max(CD27)), 
+         CD27 = cut(CD27, breaks = c(min(CD27), gate_mindensity_amy(all_gated_for_plot, "CD27"), max(CD27)), 
                     labels = c(0, 1))) %>%
   mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
   select(-`SSC.A`) %>%
@@ -688,7 +607,7 @@ Confirm pipeline populations with manual gating
 ```{r}
 
 # read in and clean manual gating percentage data
-manual_gating <- read_xlsx("../Data/flow/Human_Clinical/manual_gating.xlsx") %>%
+manual_gating <- read_xlsx("../Data/flow/Human_Clinical/Manual_gating.xlsx") %>%
   dplyr::rename(`population` = "..1",
                 percent_manual = "Manual percent") %>%
   na.omit()
@@ -710,7 +629,7 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
-comparison[1:15,] %>%
+comparison[1:14,] %>%
   mutate(Population = population,
          `% Based On Manual Gating` = percent_manual,
          `% Based on Automated Pipeline` = percent_pipeline,
@@ -737,13 +656,19 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
 Try t-SNE
 
 ```{r}
-all_gated_tSNE <- all_gated %>%
-  select(filename, HLA_DR, CD19, CD3, CD45, CD27)
+# this should be just the 36 populations that are present
+all_gated_tSNE  <- all_gated %>%
+  select(filename, HLA_DR, CD19, CD3, CD45, CD27) %>%
+  group_by(HLA_DR, CD19, CD3, CD45, CD27) %>%
+  unique() %>%
+  ungroup()
 
 colors = rainbow(length(unique(all_gated_tSNE$filename)))
 names(colors) = unique(all_gated_tSNE$filename)
 
-tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500)
+library(Rtsne)
+# remove duplicates
+tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
 
 ## Plotting
 data_plot <- as.data.frame(tsne$Y)
@@ -822,90 +747,5 @@ metacl <- MetaClustering(fSOM_all_gated $map$codes,
                                      "metaClustering_consensus", nClus = 20)
 
 PlotStars(fSOM_all_gated , backgroundValues = as.factor(metacl), main = "All Gated Concat FlowSOM")
-```
-
-Plot CD3 v. CD19
-
-```{r}
-
-
-CD3_CD19_for_plot <- all_gated_df %>%
-  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
-  select(ends_with(".A"), -`FSC.A`, filename) %>%
-  dplyr::rename(`HLA_DR` = "FITC.A",
-         `CD19` = "PE.A",
-        `CD3` =  "PE.Cy5.A",       
-         `CD45` = "PE.Cy7.A",
-         `CD27` = "APC.A")  %>%
-  na.omit() %>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
-
-ggplot(CD3_CD19_for_plot, aes(x = CD3, y = CD19)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("CD19") +
-   geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3")) +
-  geom_hline(yintercept = gate_mindensity_amy(CD19_sc, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
-
-
-
-individual_for_plot <- all_gated_df %>%
-  mutate(filename= str_replace_all(filename, "\\s", "_")) %>%
-  select(ends_with(".A"), -`FSC.A`, filename) %>%
-  dplyr::rename(`HLA_DR` = "FITC.A",
-         `CD19` = "PE.A",
-        `CD3` =  "PE.Cy5.A",       
-         `CD45` = "PE.Cy7.A",
-         `CD27` = "APC.A")  %>%
-  na.omit() %>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
-
-
-ggplot(individual_for_plot, aes(x = CD3, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC") +
-   geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD3")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
-
-
-ggplot(individual_for_plot, aes(x = CD19, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC") +
-  geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
-
-ggplot(individual_for_plot, aes(x = CD3, y = CD19)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("CD19") +
-   geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD3")) +
-  geom_hline(yintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
-
-
-ggplot(individual_for_plot, aes(x = CD19)) +
-   geom_density() +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC") +
-  geom_vline(xintercept = gate_mindensity_amy(individual_for_plot, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 20))
 ```
 

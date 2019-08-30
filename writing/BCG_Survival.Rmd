@@ -723,7 +723,7 @@ nrow(total_phenotypes)
 
 # view the specific cell phenotypes we're interested in
 sample_populations <- all_gated %>%
-  dplyr::filter(CD3 == 1 & percentage > 0.3) %>%
+  dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
   select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
   group_by(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CD69, CCR7, CD45RB, CTLA4, CD27, CD153, 
         KLRG1,  CD122, PD1,  CD28, CXCR1, CXCR3, CXCR5) %>%
@@ -825,8 +825,7 @@ sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
   mutate_all(funs(replace_na(., 0))) 
 
-# confirm that the populations were added correctly
-unique(annot_all$population)
+
 
 ```
 

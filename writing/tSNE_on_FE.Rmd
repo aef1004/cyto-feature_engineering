@@ -592,7 +592,7 @@ color_for_facets <- phenotype_data %>%
 ```{r}
 start_FE <- Sys.time()
 all_gated_tSNE <- all_gated %>%
-  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+   mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
                           ifelse(CD4 == 1 & CD8 ==0,"T Helper",
                           ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
                                  "Double Positive"))),
@@ -600,7 +600,7 @@ all_gated_tSNE <- all_gated %>%
                        ifelse(CD44 ==1 & CD62L==0, "Effector", 
                               ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
                                      ifelse(CD44==1 & CD62L ==1, "Central Mem",
-                                     "Unknown"))))) %>%
+                                     "Unknown")))))%>%
   unite(lineage_cell, c(lineage, cell), sep = " ") %>%
   select(filename, lineage_cell, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
@@ -609,7 +609,9 @@ all_gated_tSNE <- all_gated %>%
 
 colors = rainbow(length(unique(all_gated_tSNE$lineage_cell)))
 names(colors) = unique(all_gated_tSNE$lineage_cell)
+
 library(Rtsne)
+
 tsne_FE <- Rtsne(all_gated_tSNE[,-c(1:2)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
 
 ## Plotting
@@ -628,11 +630,92 @@ ggplot(data_plot_FE, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE$lineage_ce
 end_FE <- Sys.time()
 
 end_FE - start_FE
+
+
+
+
+
+# downsampling to the 36 populations
+all_gated_tSNE_36_pops <- all_gated %>%
+  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  unite(lineage_cell, c(lineage, cell), sep = " ") %>%
+  select(filename, lineage_cell, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF) %>%
+  unique()
+
+
+colors = rainbow(length(unique(all_gated_tSNE_36_pops$lineage_cell)))
+names(colors) = unique(all_gated_tSNE_36_pops$lineage_cell)
+
+tsne_FE_36_pops <- Rtsne(all_gated_tSNE_36_pops[,-c(1:2)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
+
+data_plot_FE_36_pops <- as.data.frame(tsne_FE_36_pops$Y)
+colnames(data_plot_FE_36_pops) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot_FE_36_pops, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE_36_pops$lineage_cell)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) +
+  xlab("tSNE 1") +
+  ylab("tSNE 2") +
+  labs(color = "Lineage") +
+  ggtitle("Feature Engineered t-SNE projection") + 
+  theme_bw()
+
+
+
+
+# downsampling to the 36 populations
+# Look at just the 4 populations
+all_gated_tSNE_36_pops_lineage <- all_gated %>%
+  mutate(lineage = ifelse(CD4 == 0 & CD8 ==0, "Double Negative",
+                          ifelse(CD4 == 1 & CD8 ==0,"T Helper",
+                          ifelse(CD4 ==0 & CD8 ==1, "Cytotoxic T", 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 1, "TSCM", 
+                       ifelse(CD44 ==1 & CD62L==0, "Effector", 
+                              ifelse(CD44 == 0 & CD62L == 1 & Sca1 == 0, "Naive",
+                                     ifelse(CD44==1 & CD62L ==1, "Central Mem",
+                                     "Unknown"))))) %>%
+  select(filename, lineage, CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+           CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
+           TNF) %>%
+  unique()
+
+
+colors = rainbow(length(unique(all_gated_tSNE_36_pops_lineage$lineage)))
+names(colors) = unique(all_gated_tSNE_36_pops_lineage$lineage)
+
+tsne_FE_36_pops_lineage <- Rtsne(all_gated_tSNE_36_pops_lineage[,-c(1:2)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
+
+data_plot_FE_36_pops_lineage <- as.data.frame(tsne_FE_36_pops_lineage$Y)
+colnames(data_plot_FE_36_pops_lineage) <- c("tSNE_1", "tSNE_2")
+
+ggplot(data_plot_FE_36_pops_lineage, aes(x = tSNE_1, y = tSNE_2, col = all_gated_tSNE_36_pops_lineage$lineage)) + 
+  geom_point(size = 0.2) + 
+  coord_fixed(ratio = 1) +
+  xlab("tSNE 1") +
+  ylab("tSNE 2") +
+  labs(color = "Lineage") +
+  ggtitle("Feature Engineered t-SNE projection") + 
+  theme_bw()
 ```
 
 t-SNE on data without FE
+Using the feature engineered data from before to analyze this (with the thresholds to name the data)
+
+# try to see how long it takes to run when using only 46,937 rows (the same number of rows when feature engineering the 36 pops)
 
 ```{r}
+start_normal <- Sys.time()
 normal_tSNE <- all_gated_df %>%
   dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
   mutate(Time = str_extract(filename, "D[0-9]*")) %>%
@@ -662,19 +745,40 @@ normal_tSNE <- all_gated_df %>%
          `PD1` = "PerCP.eFluor.710.A") %>%
   na.omit() %>%
   dplyr::filter(`SSC.A` != max(`SSC.A`)) %>%
-  select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69)
+  select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69) %>%
+    mutate(lineage = ifelse(CD4 < quantile(CD4_FMO$CD4, 0.99) & CD8 < quantile(CD8_FMO$CD8, 0.99), "Double Negative",
+                          ifelse(CD4 > quantile(CD4_FMO$CD4, 0.99) & CD8 < quantile(CD8_FMO$CD8, 0.99),"T Helper",
+                          ifelse(CD4 <quantile(CD4_FMO$CD4, 0.99) & CD8 >quantile(CD8_FMO$CD8, 0.99), "Cytotoxic T", 
+                                 "Double Positive"))),
+         cell = ifelse(CD44 < quantile(CD44_FMO$CD44, 0.99) & CD62L > quantile(CD62L_FMO$CD62L, 0.99) & Sca1 >quantile(Sca1_FMO$Sca1, 0.99), "TSCM", 
+                       ifelse(CD44 > quantile(CD44_FMO$CD44, 0.99) & CD62L < quantile(CD62L_FMO$CD62L, 0.99), "Effector", 
+                              ifelse(CD44 <quantile(CD44_FMO$CD44, 0.99) & CD62L > quantile(CD62L_FMO$CD62L, 0.99) & Sca1 <quantile(Sca1_FMO$Sca1, 0.99), "Naive",
+                                     ifelse(CD44 >quantile(CD44_FMO$CD44, 0.99) & CD62L >quantile(CD62L_FMO$CD62L, 0.99), "Central Mem",
+                                     "Unknown"))))) %>%
+  select(filename, lineage, IL_10:CD44) %>%
+  unique() %>%
+  filter(CD3 >quantile(CD3_FMO$CD3, 0.99)) %>%
+  top_n(46937)
 
+normal_tSNE$lineage
 
 tsne_normal <-Rtsne(normal_tSNE[,-19], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
 
 ## Plotting
+colors = rainbow(length(unique(normal_tSNE$lineage)))
+names(colors) = unique(normal_tSNE$lineage)
+
 data_plot_normal <- as.data.frame(tsne_normal$Y)
 colnames(data_plot_normal) <- c("tSNE_1", "tSNE_2")
 
-ggplot(data_plot_normal, aes(x = tSNE_1, y = tSNE_2)) + 
+ggplot(data_plot_normal, aes(x = tSNE_1, y = tSNE_2, col = normal_tSNE$lineage)) + 
   geom_point(size = 0.2) + 
   coord_fixed(ratio = 1) + 
   ggtitle("Normal t-SNE projection") + 
   theme_bw()
+
+end_normal <- Sys.time()
+
+end_normal - start_normal
 ```
 
