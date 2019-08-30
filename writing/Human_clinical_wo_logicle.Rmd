@@ -361,7 +361,7 @@ dtTemplate <- fread(ws, autostart = 1L)
 initial_gate <- gatingTemplate(ws, autostart = 1L) 
 
 # read in the single color data
-sc_fcsFiles <- list.files("../Data/flow/Human_Clinical/Single_Colors", 
+sc_fcsFiles <- list.files("../Data/flow/Colombia/Single_Colors", 
                        pattern = ".fcs", full = TRUE)
 
 
@@ -504,10 +504,8 @@ grid.arrange(p1, p2, p3, p4, p5,
 
 
 ggplot(CD3_sc, aes(x = CD3)) +
-   geom_histogram(bins =1000) +
+   geom_histogram(bins = 100) +
    scale_fill_viridis_c() +
-  scale_x_log10() +
-  scale_y_log10() +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(CD3_sc, "CD3"), color = "red")+
   theme_gray()+
