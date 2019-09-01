@@ -9,7 +9,7 @@ This dataset includes two different mouse strains (C57BL/6 and NOS-2 KO) that we
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-First, the packages must be loaded.
+First, the packages must be loaded. All packages can be installed from CRAN or Bioconductor.
 ```{r warning= FALSE}
 library(openCyto)
 library(flowClust)
@@ -31,15 +31,24 @@ library(superheat)
 library(kableExtra)
 ```
 
+[Amy, are we still using all the above packages? If not, it might be a good time to 
+clean up ones we don't need from this and the other Rmd documents in this project.]
+
 I have created a few functions to make it easier to analyze the data.
 
-- clean_FMO_after_gate:renames the columns; it also removes SSC boundary effects
-- statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
-- as.numeric.factor: convert the factors for the marker names into numeric for plotting
-```{r}
+- `clean_FMO_after_gate`: renames the columns; it also removes SSC boundary effects
+- `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ [double-check: should this be a capital R instead of lowercase one?] to correlation plots [Amy, for these modified functions, we should consider giving them different names, so that if we put these in a package and someone else loads this and the package with the original function, there won't be conflicts from two functions from separate packages having the same name. Maybe add `corr` or `r2` to the end of the functoin names?]
+- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [Amy, For this and the previous function, do you think it would be easier for us to create these modified versions by adding a `geom_text` or `geom_label` line to a ggplot object, instead, rather than changing the geoms for the smooth functions?]
+- `phenotype_heatmap`: to create the phenotype graphs with the populations and marker expression
+- `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [Amy: Why won't `as.numeric` work for this? That's a base R function that might avoid having to create this new function.]
 
+```{r}
+# [Amy, could you add a note in comments to the beginning of each new function to 
+# specify what that function does? For example, here it looks like the function 
+# renames columns, omits rows with all values missing, and filters out rows where
+# the side scatter is equal to its maximum value (because...). It inputs a tidy
+# dataframe with flow cytometry data from one sample and outputs a cleaned version 
+# of that dataframe.]
 clean_FMO_after_gate <- function(FMO_df) {
   FMO_df %>%
   select(ends_with(".A"), -`FSC.A`, `SSC.A`, filename) %>%
@@ -200,18 +209,19 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
 
-Initial gating of FMOs
-```{r}
+Initial gating of FMOs [Amy, if we're posting this as a supplement to the manuscript, we'll want to add some more details here to get users started. For example, we should explain again here that the data file named [x] would need to be obtained (by email from us? from another repository with larger size limits?) and put in a subdirectory called "Data/flow/BCG_Survival", for example.]
 
+```{r}
 # read in the gating strategy
 ws <- list.files("../Data/flow/BCG_Survival", pattern = "AmyGating_intracellular.csv", full = TRUE)
 
-# only for viewing that read in 
-dtTemplate <- fread(ws, autostart = 1L) 
+# only for viewing that read in [Amy, could you clarify this comment?]
+dtTemplate <- fread(ws) 
 
-initial_gate <- gatingTemplate(ws, autostart = 1L) 
+initial_gate <- gatingTemplate(ws) 
 
-# read in the FMOs
+# read in the FMOs [Amy, I think I'll need to get these files from you. I don't think I have them
+# in the earlier data directory you shared.]
 FMO_fcsFiles <- list.files("../Data/flow/BCG_Survival/FMOs", 
                        pattern = ".fcs", full = TRUE)
 

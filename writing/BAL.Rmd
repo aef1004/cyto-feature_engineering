@@ -33,14 +33,15 @@ library(kableExtra)
 
 I have created a few functions to make it easier to analyze the data.
 
-- clean_sc_after_gate:renames the columns; it also removes SSC boundary effects
-- .findpeaks: copied from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> to use in later mindensity function
-- .findvalleys: copied from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> to use in later mindensity function
-- gate_mindensity_amy: this is a function that I adapted from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> the difference between the original mindensity function and mine is that the original only works with a flowframe, while mine performs the same function on a dataframe. Mine also prints out the cutpoint so we can see it.
-- statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
-- as.numeric.factor: convert the factors for the marker names into numeric for plotting
+- `clean_sc_after_gate`: renames the columns; it also removes SSC boundary effects
+- `.findpeaks`: copied from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> to use in later mindensity function [Amy, I think it would be better practice for us to refer to this function, if it's in the current version of its package, within the function where we want to use it, rather than copying the definition here. That method would work better as we move toward making some of the code a package. We can discuss if that would make sense and how to do it, if so.]
+- `.findvalleys`: copied from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> to use in later mindensity function
+- `gate_mindensity_amy`: this is a function that I adapted from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> the difference between the original mindensity function and mine is that the original only works with a flowframe, while mine performs the same function on a dataframe. Mine also prints out the cutpoint so we can see it.
+- `statSmoothFunc`: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [See my comment from "BCG_Survival.Rmd"]
+- `stat_smooth_func`: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots
+- `phenotype_heatmap`: to create the phenotype graphs with the populations and marker expression [Amy, if we have functions we want to use in several of these documents, we should create a more general R script to define those functions and then "source" it at the start of each Rmd. That way, if you want to change something in one of the functions, you won't have to worry about making sure you do it in all the Rmds.]
+- `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [See my comment from "BCG_Survival.Rmd"]
+
 ```{r}
 
 clean_after_gate <- function(fcs_file) {
@@ -368,15 +369,16 @@ The single color (sc) samples are read in and initially gated on singlets and le
 The samples are gated on singlets, live, Ter119- (RBCs), and CD45+ (Leukoctyes).
 
 Note: The last gate (Leukocytes) should be ~8% positive rather than 2.5%
+
 ```{r}
 
 # read in the gating strategy
 ws <- list.files("../Data/flow/Andres_BAL_Exp", pattern = ".csv", full = TRUE)
 
 # only for viewing that read in 
-dtTemplate <- fread(ws, autostart = 1L) 
+dtTemplate <- fread(ws) 
 
-initial_gate <- gatingTemplate(ws, autostart = 1L) 
+initial_gate <- gatingTemplate(ws) 
 
 # read in the single color data
 fcsFiles <- list.files("../Data/flow/Andres_BAL_Exp", 
