@@ -1,4 +1,0 @@
-﻿alias,pop,parent,dims,gating_method,gating_args,collapseDataForGating,groupBy,preprocessing_method,preprocessing_args
-singlets,+,root,"FSC-A,FSC-H",singletGate,wider_gate=TRUE,,,,
-lymph,+,singlets,FSC-A,mindensity,"gate_range=c(4e5,8e5)",,,,
-live,-,lymph,Zombie Nir-A,mindensity,"gate_range=c(5e5,3e6)",,,,
