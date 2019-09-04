@@ -40,11 +40,12 @@ library(broom)
 
 I have created a few functions to make it easier to analyze the data.
 
-- clean_FMO_after_gate:renames the columns; it also removes SSC boundary effects
-- statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
-- as.numeric.factor: convert the factors for the marker names into numeric for plotting
+- `clean_FMO_after_gate`: renames the columns; it also removes SSC boundary effects
+- `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [see my comment from "BCG_Survival.Rmd"]
+- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
+- `phenotype_heatmap`: to create the phenotype graphs with the populations and marker expression
+- `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [see my comment from "BCG_Survival.Rmd"]
+
 ```{r}
 
 clean_FMO_after_gate <- function(FMO_df) {
@@ -206,39 +207,115 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 
 ```
 
-Initial gating of FMOs
+## Initial gating of FMOs
+
+Read in the initial gating strategy, which gates to live lymphocytes, into a `gatingTemplate` class.
+
 ```{r}
+# Identify the file with the gating strategy 
+ws <- list.files("../Data/flow/BCG_v_PBS", 
+                 pattern = "AmyGating_intracellular.csv", 
+                 full = TRUE)
+ws
+```
 
-# read in the gating strategy
-ws <- list.files("../Data/flow/BCG_v_PBS", pattern = "AmyGating_intracellular.csv", full = TRUE)
+```{r}
+# View this template
+dtTemplate <- fread(ws)
+dtTemplate
+```
 
-# only for viewing that read in 
-dtTemplate <- fread(ws, autostart = 1L) 
+```{r message = FALSE, warning = FALSE}
+# Read in the gating strategy to a 'gatingTemplate' object
+initial_gate <- gatingTemplate(ws) 
+plot(initial_gate)
+```
 
-initial_gate <- gatingTemplate(ws, autostart = 1L) 
+Read in the flow cytometry data from the FMO experiments.
 
-# read in the FMOs
+```{r}
+# Identify the file names of all 20 FCS flow cytometry experiments to 
+# read in. 
 FMO_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs", 
                        pattern = ".fcs", full = TRUE)
+FMO_fcsFiles
+```
 
-# ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
+```{r}
+# Read these files into a 'ncdfFlowSet' object. This will taken a minute
+# or so to run. The resulting 'ncdfFlowset' object contains row names with the 
+# individual samples and column names with the markers/parameters used in the flow cytometer.
 ncfs_FMO <- read.ncdfFlowSet(FMO_fcsFiles) 
+ncfs_FMO
+```
 
-# apply gating set
+Apply the initial gating to filter the data to only measurements on live lymphocyte cells.
+
+```{r}
+# Convert to a 'GatingSet' object, so we can apply the initial gating to this data.
 gs_FMO <- GatingSet(ncfs_FMO)
+gs_FMO
+```
 
-# gate the samples
+```{r fig.height = 8, fig.width = 4}
+# Apply the initial gating to this data, to filter to only measurements
+# on live lymphocyte cells. This may take a minute.
 gating(initial_gate, gs_FMO)
+## [Amy, for the singlets gating, we're getting a warning about 'rlm' failing to 
+## converge. Let's see if we can fix this error message. I think there's probably 
+## an option we can change for the gating function for that step---if we have it 
+## try more iterations before it decides it can't converge, we should be able
+## to resolve this warning. Gating for 'lymph' and 'live' look fine.]
 
-# View the gates
+# You can plot the results of this gating with `plotGate`. For example, to plot
+# the gating for the first sample, run:
 plotGate(gs_FMO[[1]])
+```
 
-# Pull out the data
+## Convert data to "tidy data" format
+
+Now that the initial gating has been applied, to limit the data to measurements of 
+live, singlet lymphocyte cells, we convert the data to a "tidy data" format
+[ref on tidy data], to allow us to work with "tidyverse" tools for further 
+analysis and visualization.
+
+```{r}
+# Pull out the data from the 'live' node of the gating set (the last node
+# in the initial gating strategy).
 FMO_gated_data <- getData(gs_FMO, "live") %>% 
   as.flowSet() 
 
+# Write a function to extract data from an item of a 'flowSet' object
+library(tibble)
+tidy_flow_item <- function(flowSet_item){
+  flowSet_item %>% 
+    Biobase::exprs() %>% 
+    tibble::as_tibble()
+}
+
+# Create a function that applies this to all items in a 'flowSet' object
+tidy_flow_set <- function(flowSet){
+  flow_set <- flowCore::fsApply(x = flowSet, 
+                                FUN = tidy_flow_item)
+  flow_set <- dplyr::bind_rows(flow_set, .id = "filename")
+}
+```
+
+Apply this function to the 'flowSet' of gated FMO data:
+
+```{r}
+FMO_gated_data <- tidy_flow_set(FMO_gated_data)
+FMO_gated_data
+```
+
+[Amy, the above code I think could be used to replace the code you have below as a 
+way to create a tidy dataframe from the 'flowSet' data. Once you get the chance
+to look through this, if you agree we can delete the code below (right now I've just
+set it to not evaluate).]
+
+```{r eval = FALSE}
 #initialize dataframe where all data will go
-FMO_gated_df = data.frame()
+FMO_gated_df <- data.frame()
 
 # convert each of the FMO files to a data frame, adding on the filename
 # bind all of the FMO files into one dataframe
@@ -250,10 +327,17 @@ for (i in 1:length(FMO_gated_data)) {
 
   FMO_gated_df <- rbind(FMO_gated_df, FMO_data)
 }
+```
 
+```{r}
 # confirm that all of the files were read in correctly
 unique(FMO_gated_df$filename)
+```
 
+[Let's clean up this file so we don't have redos, instead just a clean flow
+through our final code.]
+
+```{r}
 # I accidently got CD4 into the CD4 FMO, so I had to redo it. I also tried CD69 to see if it was experiment-dependent, but CD69 problems are due to spillover
 
 # Add in the updated FMOS
@@ -267,11 +351,20 @@ gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
 
 # gate the samples
 gating(initial_gate, gs_FMO_redo)
+```
 
+```{r}
 # Pull out the data
 FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
   as.flowSet() 
 
+FMO_gated_df_redo <- tidy_flow_set(FMO_gated_data_redo)
+```
+
+[Again, we can delete the following if we're happy with the function replacement above. 
+I have it set to not evaluate right now.]
+
+```{r eval = FALSE}
 FMO_gated_df_redo = data.frame()
 
 for (i in 1:length(FMO_gated_data_redo)) {
@@ -282,26 +375,32 @@ for (i in 1:length(FMO_gated_data_redo)) {
 
   FMO_gated_df_redo <- rbind(FMO_gated_df_redo, FMO_data_redo)
 }
+```
 
+```{r}
 # when I redid the FMOs, I used lowercase for naming Zombie, so must convert to uppercase to match the previous samples
 FMO_gated_df_redo <- FMO_gated_df_redo %>%
-  select(-SSC.B.H, - SSC.B.A) %>%
+  dplyr::select(-`SSC-B-H`, - `SSC-B-A`) %>%
+  dplyr::rename_all(list(~ stringr::str_replace_all(., "[\\s|\\-]", replacement = "."))) %>% 
   dplyr::rename("Zombie.NIR.A" = "Zombie.Nir.A",
          "Zombie.NIR.H" = "Zombie.Nir.H")
 
 # combine the new and old FMOs
 FMO_gated_df <- rbind(FMO_gated_df, FMO_gated_df_redo)
-
-plotGate(gs_FMO[[3]])
-
-
-
 ```
+
+[Amy, could you add some text saying what we're looking at with this next plot?]
+
+```{r fig.height = 8, fig.width = 4}
+plotGate(gs_FMO[[3]])
+```
+
 Try FMO new way
 
 Need to
 - make dataframe that only contains CD3 marker MFI for the CD3 FMO, only CD103 for CD103 FMO etc.
 - Create data frame with the different thresholds
+
 ```{r}
 # try to do the thresholds
 FMO_gated_df %>%
@@ -309,9 +408,11 @@ FMO_gated_df %>%
   group_by(filename) %>%
   summarise(CD3_threshold = quantile(CD3, 0.99),
             CD103_threshold = quantile(CD103, 0.99))
+## [Amy, should the above code be assigning somewhere? Or are you just
+## printing out these results to check something?]
 
 # try to make the data readable with ggplot
-FMO_gated_for_facet <-FMO_gated_df %>%
+FMO_gated_for_facet <- FMO_gated_df %>%
   clean_FMO_after_gate() %>%
   gather(key = "Marker", value = "MFI", -filename, -SSC.A) 
 
@@ -326,12 +427,14 @@ ggplot(FMO_gated_for_facet, aes(x = MFI, y = `SSC.A`)) +
   theme(axis.text = element_text(size =12),
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
 ```
 
-
+[Amy, what is it about the above plot that we want to tweak through the code in the next
+few sections? I'm thinking there definitely should be a way to shorten the following code, 
+but I want to make sure I understand what we're aiming for before I take a crack.]
 
 Pull out the individual FMOS
+
 ```{r}
 
 CD3_FMO <- FMO_gated_df %>%
