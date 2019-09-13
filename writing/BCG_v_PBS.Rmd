@@ -4,7 +4,7 @@ author: "Amy Fox"
 output: html_document
 ---
 
-This dataset includes mice that were vaccinated with either PBS (control) or BCG. 12 weeks later these mice were infected with *Mycobacterium tuberculosis*. They were evaluated via CFUs for bacterial burden and flow cytometry for immune populations 30, 60, and 90 days post-infection. 
+This dataset includes mice that were vaccinated with either PBS (control) or BCG. 12 weeks later these mice were infected with *Mycobacterium tuberculosis*. They were evaluated via CFUs for bacterial burden and flow cytometry for immune populations 30, 60, and 90 days post-infection. A Cytek Aurora was used to collect the flow cytometry data.
 
 Data Manipulations
 - removed CD69 and FoxP3 markers because spillover
