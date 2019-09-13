@@ -21,7 +21,6 @@ library(flowClust)
 library(data.table)
 library(flowCore)
 library(ggcyto)
-library(FlowSOM)
 library(dplyr)
 library(pheatmap)
 library(stringr)
@@ -42,9 +41,9 @@ I have created a few functions to make it easier to analyze the data.
 
 - `clean_FMO_after_gate`: renames the columns; it also removes SSC boundary effects
 - `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [see my comment from "BCG_Survival.Rmd"]
-- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- `phenotype_heatmap`: to create the phenotype graphs with the populations and marker expression
+- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots
 - `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [see my comment from "BCG_Survival.Rmd"]
+- `viridis_colors`: vector of the colors used for most plots
 
 ```{r}
 
@@ -197,11 +196,6 @@ StatSmoothFunc <- ggproto("StatSmooth", Stat,
 
 viridis_colors <- c("#3F4788FF", "#56C667FF")
 
-phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, 
-           color = viridis_colors, cellwidth = 15, cellheight = 15,
-           labels_row = paste("Pop", population_no), main = title)
-}
 
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 
@@ -361,41 +355,7 @@ This visualization is to look at the initial gating of the FMOs to ensure that t
 plotGate(gs_FMO[[3]])
 ```
 
-Try FMO new way
 
-[I can probably remove this part]
-
-Need to
-- make dataframe that only contains CD3 marker MFI for the CD3 FMO, only CD103 for CD103 FMO etc.
-- Create data frame with the different thresholds
-
-```{r}
-# try to do the thresholds
-FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  group_by(filename) %>%
-  summarise(CD3_threshold = quantile(CD3, 0.99),
-            CD103_threshold = quantile(CD103, 0.99))
-## [Amy, should the above code be assigning somewhere? Or are you just
-## printing out these results to check something?]
-
-# try to make the data readable with ggplot
-FMO_gated_for_facet <- FMO_gated_df %>%
-  clean_FMO_after_gate() %>%
-  gather(key = "Marker", value = "MFI", -filename, -SSC.A) 
-
-# not plotting correctly
-ggplot(FMO_gated_for_facet, aes(x = MFI, y = `SSC.A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  facet_wrap(~Marker, ncol = 5) +
-  ylab("") +
-   geom_vline(xintercept = quantile(TNF_FMO$TNF, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-```
 
 [Amy, what is it about the above plot that we want to tweak through the code in the next
 few sections? I'm thinking there definitely should be a way to shorten the following code, 
@@ -1095,10 +1055,6 @@ corr <- round(cor(corr), 1)
 # plot the population correlation plot separated by the lineages
 superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 3, left.label.text.size = 3)
 
-# creates a legend for the superheat correlation plot
-plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-legend("topleft", legend =c("Double Negative", "T helper", "Cytotoxic T", "Double Positive"), pch=16, pt.cex=3, cex=1.5, bty='n',col = c("darkturquoise", "plum3", "hotpink", "orange"))
-mtext("Cell Lineage", at=0.2, cex=2)
 
 ```
 
@@ -1328,7 +1284,8 @@ fitted_models %>%
 
 Different timepoints for hypothesis
 ```{r}
-# Different timepoints
+
+# D30
 facets_for_CFUs_D30 <- facets_for_CFUs %>%
   filter(Timepoint == 30)
 
@@ -1349,6 +1306,7 @@ ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
 
+# D60
 facets_for_CFUs_D60 <- facets_for_CFUs %>%
   filter(Timepoint == 60)
 
@@ -1356,27 +1314,6 @@ ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = 0.2) + 
   scale_fill_identity() +
-  geom_point(color = "black") 
-
-ggplot(D60_pops_CFUs, aes(percentage, CFU, color = Group)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
-  xlab("Percentage of Cells") +
-  ylab("log10 CFU") +
-  ggtitle("Day 60: Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-
-
-ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
-  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
-  scale_fill_identity() +
   geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
   facet_wrap(~population, scales = "free_x", ncol = 9) +
@@ -1390,27 +1327,7 @@ ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
 
-D30_pops_CFUs <- pops_CFUs %>%
-  dplyr::filter(`Timepoint` == 30)
-
-ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
-  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
-  scale_fill_identity() +
-  geom_point(color = "black") +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
-  xlab("Percentage of Cells") +
-  ylab("log10 CFU") +
-  ggtitle("Day 30: Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-
-
+# D90
 facets_for_CFUs_D90 <- facets_for_CFUs %>%
   filter(Timepoint == 90)
 
@@ -1495,48 +1412,4 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme_classic()
   
 ```
-
-Want to try to add different colors to facets
-```{r}
-
-formula = y~x
-
-library(ggpmisc)
-ggplot(pops_CFUs, aes(percentage, CFU)) +
-  geom_point() +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  geom_smooth(method = "lm", formula = formula, se = FALSE, color = "#3F4788FF") +
-  stat_poly_eq(formula = formula, parse = TRUE, size = 2) +
-    stat_fit_glance(method = 'lm', method.args = list(formula= formula), geom = 'text',
-                    aes(label = paste("p-value = ", signif(..p.value.., digits = 4), sep = "")),
-                        label.x.nps = "right", label.y.npc = 0.35, size = 3) +
-  ylab("log10 CFU") +
-  ggtitle("Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-  
-  
-  
-aes(label = paste(..r.label..)),
-               label.x.npc = 0.15,
-```
-
-
-
-
-```{r}
-ggplot(pops_CFUs, aes(percentage, CFU)) +
-  geom_point() +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  geom_smooth(method = "lm", formula = formula, se = FALSE, color = "#3F4788FF") +
-  stat_poly_eq(formula = formula, parse = TRUE, size = 2) +
-  stat_fit_glance(method = "lm", method.args = list(formula = formula),
-                  label.x = "right", label.y= "bottom",
-                  aes(label = paste("p-value", signif(..p.value.., digits = 2))), size = 2)
-  
-```
-
-
 
