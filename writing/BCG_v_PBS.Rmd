@@ -50,29 +50,29 @@ I have created a few functions to make it easier to analyze the data.
 
 clean_FMO_after_gate <- function(FMO_df) {
   FMO_df %>%
-  select(ends_with(".A"), -`FSC.A`, `SSC.A`, filename) %>%
-  dplyr::rename(`FoxP3` = "APC.A",
-         `CD44` = "APC.Fire.750.A",
-        `CD103` =  "APC.R700.A",       
-         `CD3` = "Alexa.Fluor.532.A",
-         `Sca1` = "BB515.A",
-         `IL_10` = "BV421.A",
-         `CD4` = "BV480.A",
-         `CD69` = "BV510.A",
-         `CD8` = "BV570.A", 
-         `CTLA4` = "BV605.A",
-         `CD27` = "BV650.A",
-         `CD153` = "BV711.A",
-         `KLRG1` = "BV785.A",
-         `IL_17` = "PE.A",
-         `CD122` = "PE.Cy5.A",
-         `IFN` = "PE.Cy7.A", 
-         `CD62L` = "PE.Dazzle594.A",
-         `TNF` = "Pacific.Blue.A", 
-         `CD28` = "PE.Cy5.5.A",
-         `PD1` = "PerCP.eFluor.710.A")  %>%
+  select(ends_with("-A"), -`FSC-A`, `SSC-A`, filename) %>%
+  dplyr::rename(`FoxP3` = "APC-A",
+         `CD44` = "APC-Fire 750-A",
+        `CD103` =  "APC-R700-A",       
+         `CD3` = "Alexa Fluor 532-A",
+         `Sca1` = "BB515-A",
+         `IL_10` = "BV421-A",
+         `CD4` = "BV480-A",
+         `CD69` = "BV510-A",
+         `CD8` = "BV570-A", 
+         `CTLA4` = "BV605-A",
+         `CD27` = "BV650-A",
+         `CD153` = "BV711-A",
+         `KLRG1` = "BV785-A",
+         `IL_17` = "PE-A",
+         `CD122` = "PE-Cy5-A",
+         `IFN` = "PE-Cy7-A", 
+         `CD62L` = "PE-Dazzle594-A",
+         `TNF` = "Pacific Blue-A", 
+         `CD28` = "PE-Cy5.5-A",
+         `PD1` = "PerCP-eFluor 710-A")  %>%
    na.omit()%>%
-  dplyr::filter(`SSC.A` != max(`SSC.A`))
+  dplyr::filter(`SSC-A` != max(`SSC-A`))
 
 }
 
@@ -308,30 +308,10 @@ FMO_gated_data <- tidy_flow_set(FMO_gated_data)
 FMO_gated_data
 ```
 
-[Amy, the above code I think could be used to replace the code you have below as a 
-way to create a tidy dataframe from the 'flowSet' data. Once you get the chance
-to look through this, if you agree we can delete the code below (right now I've just
-set it to not evaluate).]
-
-```{r eval = FALSE}
-#initialize dataframe where all data will go
-FMO_gated_df <- data.frame()
-
-# convert each of the FMO files to a data frame, adding on the filename
-# bind all of the FMO files into one dataframe
-for (i in 1:length(FMO_gated_data)) {
-  FMO_data <- FMO_gated_data[[i]] %>%
-    exprs() %>%
-    data.frame() %>%
-    mutate(filename = sampleNames(FMO_gated_data[i])) 
-
-  FMO_gated_df <- rbind(FMO_gated_df, FMO_data)
-}
-```
 
 ```{r}
 # confirm that all of the files were read in correctly
-unique(FMO_gated_df$filename)
+unique(FMO_gated_data$filename)
 ```
 
 [Let's clean up this file so we don't have redos, instead just a clean flow
@@ -361,41 +341,29 @@ FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>%
 FMO_gated_df_redo <- tidy_flow_set(FMO_gated_data_redo)
 ```
 
-[Again, we can delete the following if we're happy with the function replacement above. 
-I have it set to not evaluate right now.]
-
-```{r eval = FALSE}
-FMO_gated_df_redo = data.frame()
-
-for (i in 1:length(FMO_gated_data_redo)) {
-  FMO_data_redo <- FMO_gated_data_redo[[i]] %>%
-    exprs() %>%
-    data.frame() %>%
-    mutate(filename = sampleNames(FMO_gated_data_redo[i])) 
-
-  FMO_gated_df_redo <- rbind(FMO_gated_df_redo, FMO_data_redo)
-}
-```
-
+[can delete this?]
+ dplyr::rename_all(list(~ stringr::str_replace_all(., "[\\s|\\-]", replacement = "."))) %>% 
+  This was part of the redo 
 ```{r}
 # when I redid the FMOs, I used lowercase for naming Zombie, so must convert to uppercase to match the previous samples
 FMO_gated_df_redo <- FMO_gated_df_redo %>%
   dplyr::select(-`SSC-B-H`, - `SSC-B-A`) %>%
-  dplyr::rename_all(list(~ stringr::str_replace_all(., "[\\s|\\-]", replacement = "."))) %>% 
-  dplyr::rename("Zombie.NIR.A" = "Zombie.Nir.A",
-         "Zombie.NIR.H" = "Zombie.Nir.H")
+  dplyr::rename("Zombie NIR-A" = "Zombie Nir-A",
+         "Zombie NIR-H" = "Zombie Nir-H")
 
 # combine the new and old FMOs
-FMO_gated_df <- rbind(FMO_gated_df, FMO_gated_df_redo)
+FMO_gated_data <- rbind(FMO_gated_data, FMO_gated_df_redo)
+
 ```
 
-[Amy, could you add some text saying what we're looking at with this next plot?]
-
+This visualization is to look at the initial gating of the FMOs to ensure that the gates are placed correctly.
 ```{r fig.height = 8, fig.width = 4}
 plotGate(gs_FMO[[3]])
 ```
 
 Try FMO new way
+
+[I can probably remove this part]
 
 Need to
 - make dataframe that only contains CD3 marker MFI for the CD3 FMO, only CD103 for CD103 FMO etc.
@@ -403,7 +371,7 @@ Need to
 
 ```{r}
 # try to do the thresholds
-FMO_gated_df %>%
+FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   group_by(filename) %>%
   summarise(CD3_threshold = quantile(CD3, 0.99),
@@ -433,87 +401,89 @@ ggplot(FMO_gated_for_facet, aes(x = MFI, y = `SSC.A`)) +
 few sections? I'm thinking there definitely should be a way to shorten the following code, 
 but I want to make sure I understand what we're aiming for before I take a crack.]
 
+[Reply to Brooke: I want to automate it so that I don't have to plot each individual FMO like below. I attempted to do this in the code above, but I wasn't able to get it to work. The problem is that each filename has a different threshold, so I don't know how to map it correctly that way...]
+
 Pull out the individual FMOS
 
 ```{r}
 
-CD3_FMO <- FMO_gated_df %>%
+CD3_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD3_20190218_153937_Unmixed.fcs")
 
-CD4_FMO <- FMO_gated_df %>%
+CD4_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD4_June_6_Redo_Unmixed.fcs")
 
-CD8_FMO <- FMO_gated_df %>%
+CD8_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD8_20190218_154138_Unmixed.fcs")
 
-CD27_FMO <- FMO_gated_df %>%
+CD27_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD27_20190218_154154_Unmixed.fcs")
 
-CD28_FMO <- FMO_gated_df %>%
+CD28_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD28_20190218_154012_Unmixed.fcs")
 
-CD44_FMO <- FMO_gated_df %>%
+CD44_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD44_20190218_154054_Unmixed.fcs")
 
-CD62L_FMO <- FMO_gated_df %>%
+CD62L_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD62L_20190218_153953_Unmixed.fcs") 
 
-CD69_FMO <- FMO_gated_df %>%
+CD69_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD69_June_6_Redo_Unmixed.fcs")
 
-CD103_FMO <- FMO_gated_df %>%
+CD103_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD103_20190218_154045_Unmixed.fcs")
 
-CD122_FMO <- FMO_gated_df %>%
+CD122_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD122_20190218_154003_Unmixed.fcs")
 
-CD153_FMO <- FMO_gated_df %>%
+CD153_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CD153_20190218_154205_Unmixed.fcs")
 
-CTLA4_FMO <- FMO_gated_df %>%
+CTLA4_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_CTLA4_20190218_154146_Unmixed.fcs")
 
-FoxP3_FMO <- FMO_gated_df %>%
+FoxP3_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_FoxP3_20190218_154037_Unmixed.fcs") 
 
-IFN_FMO <- FMO_gated_df %>%
+IFN_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_IFN-G_20190218_154029_Unmixed.fcs")
 
-IL_10_FMO <- FMO_gated_df %>%
+IL_10_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_IL-10_20190218_154102_Unmixed.fcs") 
 
-IL_17_FMO <- FMO_gated_df %>%
+IL_17_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_IL-17_20190218_153945_Unmixed.fcs")
 
-KLRG1_FMO <- FMO_gated_df %>%
+KLRG1_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_KLRG1_20190218_154214_Unmixed.fcs") 
 
-PD1_FMO <- FMO_gated_df %>%
+PD1_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_PD1_20190218_154021_Unmixed.fcs")
 
-Sca1_FMO <- FMO_gated_df %>%
+Sca1_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_Sca1_20190218_153845_Unmixed.fcs")
 
-TNF_FMO <- FMO_gated_df %>%
+TNF_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   dplyr::filter(filename == "FMOs_TNF-a_20190218_154111_Unmixed.fcs")
 ```
@@ -521,8 +491,8 @@ TNF_FMO <- FMO_gated_df %>%
 Feature engineering FMOs and plot
 
 Try messing with hexbins
-```{r fig.width = 11, fig.height=4, warning=FALSE}
-p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = SSC.A)) +
+```{r fig.width = 8, fig.height= 6 warning=FALSE}
+p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
    ylab("") +
@@ -532,7 +502,7 @@ p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p2 <- ggplot(CD4_FMO, aes(x = CD4, y = SSC.A)) +
+p2 <- ggplot(CD4_FMO, aes(x = CD4, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
    ylab("") +
@@ -542,7 +512,8 @@ p2 <- ggplot(CD4_FMO, aes(x = CD4, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p3 <- ggplot(CD8_FMO, aes(x = CD8, y = SSC.A)) +
+
+p3 <- ggplot(CD8_FMO, aes(x = CD8, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
    ylab("") +
@@ -553,7 +524,7 @@ p3 <- ggplot(CD8_FMO, aes(x = CD8, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 # this plot is removed because we are not going to be using this marker
-p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = SSC.A)) +
+p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
    ylab("") +
@@ -563,7 +534,7 @@ p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p5 <- ggplot(CD27_FMO, aes(x = CD27, y = SSC.A)) +
+p5 <- ggplot(CD27_FMO, aes(x = CD27, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -573,7 +544,7 @@ p5 <- ggplot(CD27_FMO, aes(x = CD27, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p6 <- ggplot(CD28_FMO, aes(x = CD28, y = SSC.A)) +
+p6 <- ggplot(CD28_FMO, aes(x = CD28, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -583,7 +554,7 @@ p6 <- ggplot(CD28_FMO, aes(x = CD28, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p7 <- ggplot(CD44_FMO, aes(x = CD44, y = SSC.A)) +
+p7 <- ggplot(CD44_FMO, aes(x = CD44, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -594,7 +565,7 @@ p7 <- ggplot(CD44_FMO, aes(x = CD44, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p8 <- ggplot(IL_10_FMO, aes(x = IL_10, y = SSC.A)) +
+p8 <- ggplot(IL_10_FMO, aes(x = IL_10, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -604,7 +575,7 @@ p8 <- ggplot(IL_10_FMO, aes(x = IL_10, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = SSC.A)) +
+p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
    ylab("") +
@@ -615,7 +586,7 @@ p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 # this plot is removed because we are not going to be using this marker
-p10 <- ggplot(CD69_FMO, aes(x = CD69, y = SSC.A)) +
+p10 <- ggplot(CD69_FMO, aes(x = CD69, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -626,7 +597,7 @@ p10 <- ggplot(CD69_FMO, aes(x = CD69, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p11 <- ggplot(CD103_FMO, aes(x = CD103, y = SSC.A)) +
+p11 <- ggplot(CD103_FMO, aes(x = CD103, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -637,7 +608,7 @@ p11 <- ggplot(CD103_FMO, aes(x = CD103, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p12 <- ggplot(CD122_FMO, aes(x = CD122, y = SSC.A)) +
+p12 <- ggplot(CD122_FMO, aes(x = CD122, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -648,7 +619,7 @@ p12 <- ggplot(CD122_FMO, aes(x = CD122, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p13 <- ggplot(CD153_FMO, aes(x = CD153, y = SSC.A)) +
+p13 <- ggplot(CD153_FMO, aes(x = CD153, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -659,7 +630,7 @@ p13 <- ggplot(CD153_FMO, aes(x = CD153, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p14 <- ggplot(CTLA4_FMO, aes(x = CTLA4, y = SSC.A)) +
+p14 <- ggplot(CTLA4_FMO, aes(x = CTLA4, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -670,7 +641,7 @@ p14 <- ggplot(CTLA4_FMO, aes(x = CTLA4, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p15 <- ggplot(IL_17_FMO, aes(x = IL_17, y = SSC.A)) +
+p15 <- ggplot(IL_17_FMO, aes(x = IL_17, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -681,7 +652,7 @@ p15 <- ggplot(IL_17_FMO, aes(x = IL_17, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p16 <- ggplot(IFN_FMO, aes(x = IFN, y = SSC.A)) +
+p16 <- ggplot(IFN_FMO, aes(x = IFN, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -692,7 +663,7 @@ p16 <- ggplot(IFN_FMO, aes(x = IFN, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p17 <- ggplot(TNF_FMO, aes(x = TNF, y = SSC.A)) +
+p17 <- ggplot(TNF_FMO, aes(x = TNF, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -703,7 +674,7 @@ p17 <- ggplot(TNF_FMO, aes(x = TNF, y = SSC.A)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
 
-p18 <- ggplot(KLRG1_FMO, aes(x = KLRG1, y = SSC.A)) +
+p18 <- ggplot(KLRG1_FMO, aes(x = KLRG1, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -713,7 +684,7 @@ p18 <- ggplot(KLRG1_FMO, aes(x = KLRG1, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p19 <- ggplot(PD1_FMO, aes(x = PD1, y = SSC.A)) +
+p19 <- ggplot(PD1_FMO, aes(x = PD1, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -723,7 +694,7 @@ p19 <- ggplot(PD1_FMO, aes(x = PD1, y = SSC.A)) +
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
 
-p20 <- ggplot(Sca1_FMO, aes(x = Sca1, y = SSC.A)) +
+p20 <- ggplot(Sca1_FMO, aes(x = Sca1, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
   ylab("") +
@@ -737,7 +708,7 @@ p20 <- ggplot(Sca1_FMO, aes(x = Sca1, y = SSC.A)) +
 library(grid)
 grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
-             nrow = 3, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
+             nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
 ```
 
 Gating the sample data
@@ -834,21 +805,20 @@ all_gated_df <- rbind(all_gated_df, D90_all_gated_df)
 # confirm that all of the data is here
 unique(all_gated_df$filename)
 
-
-
-ggcyto(gs[[3]], aes(x = `FSC-A`, y = `FSC-H`)) + 
+ggcyto(gs[[3]], aes(x = `FSC.A`, y = `FSC.H`)) + 
   geom_hex(bins = 50) + 
-  xlim(-100, 4000000) + 
   scale_fill_viridis_c() +
+  xlim(-100, 4000000) +
   geom_gate("singlets") +
   xlab("FSC-A") +
   ylab("FSC-H") +
-  theme(axis.text = element_text(size = 16)) +
   ggtitle("Singlets") +
   theme_gray() +
   geom_stats() + 
-  theme(strip.text = element_blank())
-
+  theme(strip.text = element_blank(),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20))
 
 ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) + 
   geom_hex(bins = 50) + 
@@ -857,11 +827,13 @@ ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) +
   ylim(-100, 4000000) + 
   xlab("FSC-A") +
   ylab("SSC-A") +
-  theme(axis.text = element_text(size = 16)) +
   ggtitle("Leukocytes") +
   theme_gray() +
   geom_stats()+ 
-  theme(strip.text = element_blank())
+  theme(strip.text = element_blank(),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20))
 
 ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
   geom_density() + 
@@ -869,12 +841,14 @@ ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) +
   xlim(-100,50000) + 
   xlab("Zombie NIR-A") +
   ylab("Density") +
-  theme(axis.text = element_text(size = 16)) +
   ggtitle("Live") +
   theme_gray() +
   geom_stats() +
   labs_cyto("both") + 
-  theme(strip.text = element_blank())
+  theme(strip.text = element_blank(),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20))
 
 ```
 
@@ -986,8 +960,10 @@ total_phenotypes <- all_gated %>%
  select(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
   mutate_all(~as.numeric.factor(.))
 
-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE)
+supp_1 <-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) %>%
+  print()
+
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -1172,19 +1148,24 @@ ggplot(facets_for_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "
   geom_line() +
   facet_wrap("population", scales = "free", ncol = 9) +
   xlab("Days Post-Infection") +
-  ylab("Average Percent of Cells") +
-  ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
+  ylab("Average Percent of Total Live Leukocytes") +
   scale_color_manual(values = c("black", "white")) +
   theme_gray() +
     theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
         axis.text.y = element_text(size = 13),
         strip.text.x = element_text(size = 10),
-        axis.title = element_text(size = 20),
+        axis.title = element_text(size = 17),
         title = element_text(size = 20),
         legend.text = element_text(size=18),
         legend.key.size = unit(1.5, "line"))
 
 
+
+
+```
+
+Extra visualizations
+```{r fig.width = 6, fig.height= 4}
 # Vaccinated v. unvaccinated for Day 30 bar
 facets_for_vacc_v_unvacc <- facets_for_timeseries %>%
   filter(Timepoint == 30)
@@ -1277,6 +1258,8 @@ ggplot(facets_for_boxplot, aes(x = Group,
         legend.key.size = unit(1.5, "line"),
         legend.position = "none")
 ```
+
+
   geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = .6) +geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = 0.2) +
@@ -1284,7 +1267,7 @@ Data Visualization
 
 - CFU Correlation
 
-```{r fig.width = 6, fig.height= 3}
+```{r fig.width = 3.5, fig.height= 3.5}
 
 # read in the CFU data
 CFUs <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
@@ -1313,78 +1296,15 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   scale_fill_identity() +
   geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  facet_wrap(~population, scales = "free_x", ncol = 6) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  xlab("Percentage of Cells") +
   ylab("log10 CFU") +
   ggtitle("Population and CFU Linear regression") +
   theme(axis.text.x = element_text(size = 9, hjust = 1),
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
-
-
-# Different timepoints
-facets_for_CFUs_D30 <- facets_for_CFUs %>%
-  filter(Timepoint == 30)
-
-ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
-  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
-  scale_fill_identity() +
-  geom_point(color = "black") +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ylab("log10 CFU") +
-  ggtitle("Day 30: Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-
-facets_for_CFUs_D60 <- facets_for_CFUs %>%
-  filter(Timepoint == 60)
-
-ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
-  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
-  scale_fill_identity() +
-  geom_point(color = "black") 
-
-D30_pops_CFUs <- pops_CFUs %>%
-  dplyr::filter(`Timepoint` == 30)
-
-ggplot(D30_pops_CFUs, aes(percentage, CFU, color = Group)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ylab("log10 CFU") +
-  ggtitle("Day 60: Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-
-
-facets_for_CFUs_D90 <- facets_for_CFUs %>%
-  filter(Timepoint == 90)
-
-ggplot(facets_for_CFUs_D90, aes(percentage, CFU)) +
-  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
-  scale_fill_identity() +
-  geom_point(color = "black") +
-  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 9) +
-  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
-  ylab("log10 CFU") +
-  ggtitle("Day 90: Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
-        axis.text.y = element_text(size = 9),
-        axis.title = element_text(size = 15),
-        title = element_text(size = 17))
-
 
 fitted_models <- facets_for_CFUs %>% 
   group_by(population) %>% 
@@ -1405,6 +1325,113 @@ fitted_models %>%
   row_spec(0:nrow(fitted_models), color = "black")
 
 ```
+
+Different timepoints for hypothesis
+```{r}
+# Different timepoints
+facets_for_CFUs_D30 <- facets_for_CFUs %>%
+  filter(Timepoint == 30)
+
+ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Day 30: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+facets_for_CFUs_D60 <- facets_for_CFUs %>%
+  filter(Timepoint == 60)
+
+ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") 
+
+ggplot(D60_pops_CFUs, aes(percentage, CFU, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Day 60: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+
+ggplot(facets_for_CFUs_D60, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Day 60: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+D30_pops_CFUs <- pops_CFUs %>%
+  dplyr::filter(`Timepoint` == 30)
+
+ggplot(facets_for_CFUs_D30, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Day 30: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+
+facets_for_CFUs_D90 <- facets_for_CFUs %>%
+  filter(Timepoint == 90)
+
+ggplot(facets_for_CFUs_D90, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 9) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE) +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Day 90: Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+```
+
 
 Confirm pipeline populations with manual gating
 

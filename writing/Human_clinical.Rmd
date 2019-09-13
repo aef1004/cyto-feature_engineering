@@ -415,8 +415,10 @@ p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "HLA_DR")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -425,8 +427,10 @@ p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -435,8 +439,10 @@ p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -445,8 +451,10 @@ p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD45")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -455,8 +463,10 @@ p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD27")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 grid.arrange(p1, p2, p3, p4, p5, 
              nrow = 2)
@@ -517,7 +527,7 @@ total_phenotypes <- all_gated %>%
 
   
 pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE)
+         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 12)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -564,7 +574,7 @@ annotation <- test_rearrange %>%
 pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = rownames(annotation), 
            annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
+           cellwidth = 15, cellheight = 15, angle_col = 45, legend = F,
            main = "Leukocytes")
 ```
 
@@ -637,19 +647,22 @@ comparison[1:14,] %>%
          `Average Difference` = average_difference) %>%
   select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
   kable(align = "c") %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), font_size = 25) %>%
   row_spec(0:nrow(comparison), color = "black") %>%
   print()
 
 # compare the two gating types with manual v. pipeline plot
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0) +
-  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman") +
+  geom_point(size = 3) +
+  geom_abline(slope = 1, intercept = 0, size = 1) +
+  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman", size = 7) +
   ggtitle("Human Clinical Data: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.title = element_text(size = 20),
+        axis.text = element_text(size = 15),
+        title = element_text(size = 15))
 ```
 
 
