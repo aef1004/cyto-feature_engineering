@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 Read in the necessary packages
-```{r}
+```{r warning= FALSE}
 library(readxl)
 library(dplyr)
 library(ggplot2)
