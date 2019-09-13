@@ -3,15 +3,19 @@ title: "Lineage Table"
 output: html_document
 ---
 
+This R-markdown plots that describes how the lineages and cell types were separated in the heatmap plots.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Load the necessary packages
 ```{r}
 library(kableExtra)
+library(dplyr)
 ```
 
-
+Create the data for the tables 
 ```{r}
 cell_lineage <- c("Double Negative", "T helper", "Cytotoxic T",  "Double Positive")
 markers_lineage <- c("CD3+ CD4- CD8-", "CD3+ CD4+ CD8-", "CD3+ CD4- CD8+", "CD3+ CD4+ CD8+")
@@ -24,7 +28,8 @@ lineage_df <- data.frame(cell_lineage, markers_lineage)
 cell_type_df <- data.frame(T_cell_type, markers_cell_type)
 ```
 
-```{r}
+Print the tables in kable format
+```{r message = FALSE}
 lineage_df %>%
   mutate(`Cell Lineage` = cell_lineage,
          `Associated Markers` = markers_lineage) %>%
