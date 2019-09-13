@@ -1,5 +1,6 @@
 ---
 title: "Lineage Table"
+author: "Amy Fox"
 output: html_document
 ---
 
