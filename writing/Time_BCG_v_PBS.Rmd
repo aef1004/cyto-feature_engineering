@@ -3,7 +3,7 @@ title: "Time_BCG_v_PBS"
 output: html_document
 ---
 
-
+This R-Markdown tests  how long it takes to analyze the data and produce the figures.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
