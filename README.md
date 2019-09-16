@@ -12,4 +12,4 @@ Repository Directory
 - Lineage_Table.Rmd : code to create the tables to describe the lineage and cell phenotype in Project 1
 - Time_BCG_v_PBS.Rmd : code to calculate the amount of time it takes to execute analysis pipeline on Project 1 for different inputs of cells
 
-Note: The .fcs files are too large to push to Github. The data can be obtained from Amy Fox (amyfox@colostat.edu). The data will also be submitted to ImmPort after publication. 
+Note: The .fcs files are too large to push to Github. The data can be obtained from Amy Fox (amyfox@colostat.edu). The data is also submitted to FlowRepository, and will be published after publication. 
