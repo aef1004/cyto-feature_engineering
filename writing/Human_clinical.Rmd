@@ -657,6 +657,6 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme_classic() +
   theme(axis.title = element_text(size = 20),
         axis.text = element_text(size = 15),
-        title = element_text(size = 15))
+        title = element_text(size = 15)) 
 ```
 
