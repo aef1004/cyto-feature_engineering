@@ -39,7 +39,7 @@ I have created a few functions to make it easier to analyze the data.
 
 - `clean_FMO_after_gate`: renames the columns; it also removes SSC boundary effects
 - `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [see my comment from "BCG_Survival.Rmd"]
-- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots
+- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> pull out $r^2$ for correlation plots
 - `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [see my comment from "BCG_Survival.Rmd"]
 - `viridis_colors`: vector of the colors used for most plots
 
