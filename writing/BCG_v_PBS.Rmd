@@ -266,10 +266,7 @@ plotGate(gs_FMO[[1]])
 
 ## Convert data to "tidy data" format
 
-Now that the initial gating has been applied, to limit the data to measurements of 
-live, singlet lymphocyte cells, we convert the data to a "tidy data" format
-[ref on tidy data], to allow us to work with "tidyverse" tools for further 
-analysis and visualization.
+Now that the initial gating has been applied, to limit the data to measurements oflive, singlet lymphocyte cells, we convert the data to a "tidy data" format, to allow us to work with "tidyverse" tools for further analysis and visualization.
 
 ```{r}
 # Pull out the data from the 'live' node of the gating set (the last node
@@ -323,9 +320,7 @@ gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
 
 # gate the samples
 gating(initial_gate, gs_FMO_redo)
-```
 
-```{r}
 # Pull out the data
 FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
   as.flowSet() 
@@ -333,9 +328,7 @@ FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>%
 FMO_gated_df_redo <- tidy_flow_set(FMO_gated_data_redo)
 ```
 
-[can delete this?]
- dplyr::rename_all(list(~ stringr::str_replace_all(., "[\\s|\\-]", replacement = "."))) %>% 
-  This was part of the redo 
+
 ```{r}
 # when I redid the FMOs, I used lowercase for naming Zombie, so must convert to uppercase to match the previous samples
 FMO_gated_df_redo <- FMO_gated_df_redo %>%
@@ -352,14 +345,6 @@ This visualization is to look at the initial gating of the FMOs to ensure that t
 ```{r fig.height = 8, fig.width = 4}
 plotGate(gs_FMO[[3]])
 ```
-
-
-
-[Amy, what is it about the above plot that we want to tweak through the code in the next
-few sections? I'm thinking there definitely should be a way to shorten the following code, 
-but I want to make sure I understand what we're aiming for before I take a crack.]
-
-[Reply to Brooke: I want to automate it so that I don't have to plot each individual FMO like below. I attempted to do this in the code above, but I wasn't able to get it to work. The problem is that each filename has a different threshold, so I don't know how to map it correctly that way...]
 
 Pull out the individual FMOS
 
@@ -448,7 +433,6 @@ TNF_FMO <- FMO_gated_data %>%
 
 Feature engineering FMOs and plot
 
-Try messing with hexbins
 ```{r fig.width = 8, fig.height= 6 warning=FALSE}
 p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
@@ -698,10 +682,6 @@ plotGate(gs[[12]])
 gated_data <- getData(gs, "live") %>% 
   as.flowSet() 
 
-# plot the gates to make sure they look okay
-for (i in 1:length(gs)) {
-  plotGate(gs[[i]])
-}
 
 # read in the D90 data
 D90_ws <- list.files("../Data/flow/BCG_v_PBS", 
@@ -1213,10 +1193,6 @@ ggplot(facets_for_boxplot, aes(x = Group,
         legend.position = "none")
 ```
 
-
-  geom_rect(aes(fill = c(col)),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = .6) +geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf, alpha = 0.2) +
 Data Visualization
 
 - CFU Correlation
