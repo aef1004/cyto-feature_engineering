@@ -13,13 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 Read in the necessary packages
 ```{r warning= FALSE}
 library(readxl)
-library(dplyr)
-library(ggplot2)
 library(stats)
 library(ggpubr)
 library(broom)
 library(purrr)
-library(tidyr)
+library(tidyverse)
 ```
 
 Read in excel file with CFU data and clean.
