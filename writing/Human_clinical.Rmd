@@ -18,10 +18,8 @@ library(data.table)
 library(flowCore)
 library(ggcyto)
 library(FlowSOM)
-library(dplyr)
 library(pheatmap)
 library(stringr)
-library(tidyr)
 library(readxl)
 library(gridExtra)
 library(ggcorrplot)
@@ -40,7 +38,6 @@ I have created a few functions to make it easier to analyze the data.
 - gate_mindensity_amy: this is a function that I adapted from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> the difference between the original mindensity function and mine is that the original only works with a flowframe, while mine performs the same function on a dataframe. Mine also prints out the cutpoint so we can see it.
 - statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
 - stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
 - as.numeric.factor: convert the factors for the marker names into numeric for plotting
 ```{r}
 
@@ -341,12 +338,6 @@ StatSmoothFunc <- ggproto("StatSmooth", Stat,
 )
 
 viridis_colors <- c("#3F4788FF", "#56C667FF")
-
-
-phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, color = viridis_colors,
-           labels_row = paste("Pop", population_no), main = title)
-}
 
 # need to convert the factors in the extracted_pheno to numeric for plotting
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
