@@ -1,11 +1,10 @@
 ---
 title: "Human_clinical_remove_sc"
+author: "Amy Fox"
 output: html_document
 ---
 
-**THIS IS THE ONE**
-Use mindensity for the sample alone - nothing else
-Also using logicle
+This dataset includes human whole blood from a healthy individual collected on an LSR Fortessa II flow cytometer.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -19,10 +18,8 @@ library(data.table)
 library(flowCore)
 library(ggcyto)
 library(FlowSOM)
-library(dplyr)
 library(pheatmap)
 library(stringr)
-library(tidyr)
 library(readxl)
 library(gridExtra)
 library(ggcorrplot)
@@ -41,7 +38,6 @@ I have created a few functions to make it easier to analyze the data.
 - gate_mindensity_amy: this is a function that I adapted from <https://github.com/RGLab/openCyto/blob/0ec1218427627b9ee092f8d39e6ab46d46e7e2f8/R/bayes-flowClust.R> the difference between the original mindensity function and mine is that the original only works with a flowframe, while mine performs the same function on a dataframe. Mine also prints out the cutpoint so we can see it.
 - statSmoothFunc: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
 - stat_smooth_func: copied from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
-- phenotype_heatmap: to create the phenotype graphs with the populations and marker expression
 - as.numeric.factor: convert the factors for the marker names into numeric for plotting
 ```{r}
 
@@ -343,20 +339,11 @@ StatSmoothFunc <- ggproto("StatSmooth", Stat,
 
 viridis_colors <- c("#3F4788FF", "#56C667FF")
 
-
-phenotype_heatmap <- function(csv_file, population_no, title) {
-  pheatmap(csv_file, cluster_rows = FALSE, cluster_cols = FALSE, color = viridis_colors,
-           labels_row = paste("Pop", population_no), main = title)
-}
-
 # need to convert the factors in the extracted_pheno to numeric for plotting
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
-
 Initial gating of sample data
-**Note I removed the redo of the logicle so that it uses the same logicle as above
-
 ```{r warning = FALSE, fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
 ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
@@ -415,8 +402,10 @@ p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "HLA_DR")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -425,8 +414,10 @@ p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -435,8 +426,10 @@ p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -445,8 +438,10 @@ p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD45")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
    geom_hex(bins = 100) +
@@ -455,8 +450,10 @@ p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
    ylab("SSC-A") +
    geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD27")) +
   theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))
+  theme(axis.text = element_text(size =20),
+        axis.title = element_text(size = 40),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=rel(1.5)))
 
 grid.arrange(p1, p2, p3, p4, p5, 
              nrow = 2)
@@ -517,7 +514,7 @@ total_phenotypes <- all_gated %>%
 
   
 pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE)
+         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 12)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -564,7 +561,7 @@ annotation <- test_rearrange %>%
 pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = rownames(annotation), 
            annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
-           cellwidth = 15, cellheight = 15, angle_col = 45,
+           cellwidth = 15, cellheight = 15, angle_col = 45, legend = F,
            main = "Leukocytes")
 ```
 
@@ -583,7 +580,7 @@ sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
 
 Data visualization
 
-- times series
+- percentage of cells in each population
 
 ```{r}
 ggplot(sample_populations_all_groups, aes(x = factor(population, 
@@ -616,7 +613,6 @@ manual_gating <- read_xlsx("../Data/flow/Human_Clinical/Manual_gating.xlsx") %>%
 sample_populations_all_groups <- sample_populations_all_groups %>%
   dplyr::rename(percent_pipeline = percentage)
 
-
 # should add absolute value of the percent_pipeline-percent_manual for error (abs)
 # join the manual and pipeline percentage data
 comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("population")) %>%
@@ -637,115 +633,21 @@ comparison[1:14,] %>%
          `Average Difference` = average_difference) %>%
   select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
   kable(align = "c") %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), font_size = 25) %>%
   row_spec(0:nrow(comparison), color = "black") %>%
   print()
 
 # compare the two gating types with manual v. pipeline plot
 ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0) +
-  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman") +
+  geom_point(size = 3) +
+  geom_abline(slope = 1, intercept = 0, size = 1) +
+  stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman", size = 7) +
   ggtitle("Human Clinical Data: Manual vs. Pipeline Percentage") +
   xlab("Pipeline Percent") +
   ylab("Manual Percent") +
-  theme_classic()
-```
-
-
-Try t-SNE
-
-```{r}
-# this should be just the 36 populations that are present
-all_gated_tSNE  <- all_gated %>%
-  select(filename, HLA_DR, CD19, CD3, CD45, CD27) %>%
-  group_by(HLA_DR, CD19, CD3, CD45, CD27) %>%
-  unique() %>%
-  ungroup()
-
-colors = rainbow(length(unique(all_gated_tSNE$filename)))
-names(colors) = unique(all_gated_tSNE$filename)
-
-library(Rtsne)
-# remove duplicates
-tsne <- Rtsne(all_gated_tSNE[,-1], dims = 2, perplexity=1, verbose=TRUE, max_iter = 500, check_duplicates = FALSE)
-
-## Plotting
-data_plot <- as.data.frame(tsne$Y)
-colnames(data_plot) <- c("tSNE_1", "tSNE_2")
-
-ggplot(data_plot, aes(x = tSNE_1, y = tSNE_2, col = colors)) + 
-  geom_point(size = 0.2) + 
-  coord_fixed(ratio = 1) + 
-  ggtitle("t-SNE projection with FlowSOM clustering") + 
-  theme_bw()
-```
-
-Try to add color to t-SNE
-```{r}
-#https://support.bioconductor.org/p/60421/
-library(premessa)
-gated_data <- getData(gs, "leukocytes") %>% 
-  as_flowframe() #https://rdrr.io/github/ParkerICI/premessa/man/as_flowFrame.html
-
-gated_data[[1]]
-
-exprs(gated_data) <- all_gated
-
-#####
-
-data_plot <- as.data.frame(tsne$Y)
-colnames(data_plot) <- c("tSNE_1", "tSNE_2")
-
-head(data_plot)
-dim(data_plot)  ## should match length of labels_plot (otherwise labels will not match up correctly)
-
-data_plot[, "cluster"] <- as.factor(labels_plot)
-
-head(data_plot)
-
-
-# plot 2-dimensional t-SNE projection
-
-ggplot(data_plot, aes(x = tSNE_1, y = tSNE_2, , color = cluster)) + 
-  geom_point(size = 0.2) + 
-  coord_fixed(ratio = 1) + 
-  ggtitle("t-SNE projection with FlowSOM clustering") + 
-  theme_bw()
-
-```
-
-Try FlowSOM
-
-```{r}
-# Coerce ncdfFlowSet to flowSet
-# flowSet contains 10 experiments (samples) with column names of the markers/parameters on the flow cytometer
-# this is an S4 object
-gated_data_flowSOM <- getData(gs, "live") %>% 
-  as.flowSet()
-
-# Adult FlowSOM
-# FlowSOM class possibly in list form with $data seems to contain the markers as column labels and values of the markers, but there are negative values.. could $scaled.center contain the average of each of the markers to normalize values?
-fSOM_all_gated <- ReadInput(gated_data, compensate = TRUE, 
-                              transform = TRUE, scale = TRUE) 
-
-# FlowSOM class added following
-# - $map$codes : 100 rows = 100 nodes, average value?
-# - $map$mapping : [ ,1] node where each cell is assigned, [ , 2] ??
-# - $map$medianValues : 100 rows = 100 nodes, median value per node
-# - $map$sdValue : 100 rows = 100 nodes, standard devation from ??
-fSOM_all_gated  <-  BuildSOM(fSOM_all_gated , colsToUse = c(27:45))
-
-# FlowSOM class added following
-# - $MST$graph : edges to connect nodes, ex. node 1 -- node 4
-# - $MST$l : 100 rows = 100 nodes, ???
-# - $MST$size : 100 rows = 100 nodes, size of nodes for number of cells in each node??
-fSOM_all_gated  <- BuildMST(fSOM_all_gated)
-
-# integer class : vector containing the 20 metaclusters to add to appropriate nodes
-metacl <- MetaClustering(fSOM_all_gated $map$codes, 
-                                     "metaClustering_consensus", nClus = 20)
-
-PlotStars(fSOM_all_gated , backgroundValues = as.factor(metacl), main = "All Gated Concat FlowSOM")
+  theme_classic() +
+  theme(axis.title = element_text(size = 20),
+        axis.text = element_text(size = 15),
+        title = element_text(size = 15)) 
 ```
 

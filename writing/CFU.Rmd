@@ -1,14 +1,17 @@
 ---
 title: "CFU"
+author: "Amy Fox"
 output: html_document
 ---
+
+This R-markdown plots the Colony Forming Unit (CFU) data to determine if the differences in bacterial burden between the Control (PBS) and Vaccinated (BCG) are statistically significant at the different time points.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-```{r}
+Read in the necessary packages
+```{r warning= FALSE}
 library(readxl)
 library(dplyr)
 library(ggplot2)
@@ -19,16 +22,11 @@ library(purrr)
 library(tidyr)
 ```
 
-
-Why won't this work?
-  mutate(Mouse = replace(Mouse, c("Group1", "Group2", "Group3", "Group4"),
-                         c("PBS", "BCG", "smegmatis", "BCG + smegmatis")))
-Read in csv and clean data
+Read in excel file with CFU data and clean.
+Note: For the publication we are only analyzing lung data, so filter to lung.
 ```{r}
-list.files()
-#must read in as csv for levels to work
 
-smeg_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
+lung_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
   rename(Day = Timepoint) %>%
   group_by(Organ, Day) %>%
   mutate(Group = replace(Group, Group == "Group1", "PBS")) %>%
@@ -36,90 +34,16 @@ smeg_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
   mutate(Group = replace(Group, Group == "Group3", "smegmatis")) %>%
   mutate(Group = replace(Group, Group == "Group4", "BCG + smegmatis")) %>% 
   mutate(Group = factor(Group, levels = c("PBS", "BCG", "smegmatis", "BCG + smegmatis"))) %>%
-  dplyr::filter(Group == "PBS" | Group == "BCG")
-
-smeg_aov_tukey <- smeg_CFU  %>%
-  nest() %>%
-  mutate(aov_result = map(data, ~aov(CFU ~ Group, data = .x)),
-         tukey_result = map(aov_result, TukeyHSD),
-         tidy_tukey = map(tukey_result, tidy)) %>%
-  unnest(tidy_tukey, .drop = TRUE)
-
-smeg_signif_data <- smeg_aov_tukey %>%
-  dplyr::filter(adj.p.value <0.05) %>%
-    separate(col = comparison, into = c("group1", "group2"), 
-           sep = "-") %>%
-  mutate(rounded = round(adj.p.value, digits = 4)) 
-
-smeg_signif_data <- smeg_signif_data %>%
-  mutate(star = rep("*", nrow(smeg_signif_data))) 
-
-
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("mean_se", "jitter"), data = smeg_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap(c("Organ", "Day"), ncol = length(unique(smeg_CFU$Day)), 
-             labeller = label_both) + 
-  stat_pvalue_manual(data = smeg_signif_data, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  theme_bw() +
-  rotate_x_text(45)
-
-# removed for limit
-# geom_hline(yintercept = 0.38, linetype = "dotted") +
+  dplyr::filter(Group == "PBS" | Group == "BCG") %>%
+  filter(Organ == "Lung")
 
 ```
 
-Only want the lung samples
-
+Plot the lung CFU data and run t tests
 ```{r fig.width = 3, fig.height = 1.2}
-
-lung_CFU <- smeg_CFU %>%
-  dplyr::filter(Organ == "Lung")
-
-lung_CFU_signif <- smeg_signif_data %>%
-  dplyr::filter(Organ == "Lung")
 
 viridis_colors <- c("#56C667FF", "#3F4788FF")
 
-
-# black background
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-         add = c("mean_se", "jitter"), data = lung_CFU, 
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
-             labeller = label_both) + 
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                     xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  ggtitle("Lung Bacterial Load") +
-  theme_bw() +
-  rotate_x_text(45)  +
-  scale_color_manual(values = viridis_colors) 
-
-```
-
-
-Try normal ggplot
-
-
-
-# remove add
-# data looks messy with everything in a line
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.5,
-          data = lung_CFU, size = 0.1,
-       font.label = list(size = 30, face = "plain")) +
-
-```{r fig.width = 3, fig.height = 1.2}
 lung_CFU <- lung_CFU %>%
   mutate(Group = str_replace(Group, "PBS", "Control"),
          Group = str_replace(Group, "BCG", "Vaccinated"))
@@ -135,24 +59,6 @@ ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   coord_cartesian(ylim = c(2,8)) +
   ggtitle("Lung Bacterial Load") +
   theme_bw()
-```
 
-
-
-```{r}
-ggline(x = "Group", y = "CFU", color = "Group", alpha = 0.01,
-          data = lung_CFU, size = 0.1,
-       font.label = list(size = 30, face = "plain")) +
-  facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
-             labeller = label_both)+
-  stat_pvalue_manual(data = lung_CFU_signif, 
-                     label = "star",
-                    xmin = "group1", xmax = "group2",
-                     y.position = c(6.5)) +
-  xlab("Mouse Strain") +
-  ylab("log 10 CFU") +
-  coord_cartesian(ylim = c(2,8)) +
-  ggtitle("Lung Bacterial Load") +
-  rotate_x_text(45)  
 ```
 
