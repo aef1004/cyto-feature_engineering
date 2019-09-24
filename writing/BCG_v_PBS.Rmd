@@ -38,13 +38,20 @@ library(ggpubr)
 library(broom)
 ```
 
+[Amy, are we still using all the above packages? If not, it might be a good time to 
+clean up ones we don't need from this and the other Rmd documents in this project.]
+
 I have created a few functions to make it easier to analyze the data.
 
 - `clean_FMO_after_gate`: renames the columns; it also removes SSC boundary effects
-- `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots [see my comment from "BCG_Survival.Rmd"]
-- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots
+
+- `statSmoothFunc`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add $r^2$ to correlation plots to correlation plots [Amy, for these modified functions, we should consider giving them different names, so that if we put these in a package and someone else loads this and the package with the original function, there won't be conflicts from two functions from separate packages having the same name. Maybe add `corr` or `r2` to the end of the functoin names?]
+
+- `stat_smooth_func`: modified from <https://gist.github.com/kdauria/524eade46135f6348140> to add r^2 to correlation plots [Amy, For this and the previous function, do you think it would be easier for us to create these modified versions by adding a `geom_text` or `geom_label` line to a ggplot object, instead, rather than changing the geoms for the smooth functions?]
+
 - `phenotype_heatmap`: to create the phenotype graphs with the populations and marker expression
-- `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [see my comment from "BCG_Survival.Rmd"]
+
+- `as.numeric.factor`: convert the factors for the marker names into numeric for plotting [Amy: Why won't `as.numeric` work for this? That's a base R function that might avoid having to create this new function.]
 
 ```{r}
 
