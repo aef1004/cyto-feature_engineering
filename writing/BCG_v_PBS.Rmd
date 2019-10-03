@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 First, the packages must be loaded.
-```{r warning= FALSE}
+```{r warning= FALSE, message = FALSE}
 library(openCyto)
 library(flowClust)
 library(data.table)
@@ -258,11 +258,6 @@ gs_FMO
 # Apply the initial gating to this data, to filter to only measurements
 # on live lymphocyte cells. This may take a minute.
 gating(initial_gate, gs_FMO)
-## [Amy, for the singlets gating, we're getting a warning about 'rlm' failing to 
-## converge. Let's see if we can fix this error message. I think there's probably 
-## an option we can change for the gating function for that step---if we have it 
-## try more iterations before it decides it can't converge, we should be able
-## to resolve this warning. Gating for 'lymph' and 'live' look fine.]
 
 # You can plot the results of this gating with `plotGate`. For example, to plot
 # the gating for the first sample, run:
