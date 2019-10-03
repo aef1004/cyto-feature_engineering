@@ -1,3 +1,3 @@
 ﻿alias,pop,parent,dims,gating_method,gating_args,collapseDataForGating,groupBy,preprocessing_method,preprocessing_args
-singlets,+,root,"FSC-A,FSC-H",singletGate,wider_gate=TRUE,,,,
+singlets,+,root,"FSC-A,FSC-H",singletGate,"wider_gate=TRUE,maxit=20",,,,
 leukocytes,+,singlets,"FSC-A,SSC-A",flowClust,,,,,
