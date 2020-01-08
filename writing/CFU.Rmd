@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 Read in the necessary packages
-```{r warning= FALSE}
+```{r warning= FALSE, message = FALSE}
 library(readxl)
 library(stats)
 library(ggpubr)
@@ -22,6 +22,7 @@ library(tidyverse)
 
 Read in excel file with CFU data and clean.
 Note: For the publication we are only analyzing lung data, so filter to lung.
+Additional Note: The excel file contains the data organized with the following columns: Group (experimental group), Number (the mouse number within a group), Organ (organ from which the data is collected), Timepoint (day in which the data was taken post-infection), CFU (log-10 colony forming units).
 ```{r}
 
 lung_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
