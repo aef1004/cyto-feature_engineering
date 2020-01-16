@@ -902,7 +902,6 @@ supp_1 <-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE,
          color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) %>%
   print()
 
-
 # gives the total number of populations
 nrow(total_phenotypes) 
 
@@ -977,13 +976,30 @@ phenotype_annot <- phenotype_data %>%
   mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
   column_to_rownames("population")
 
+# count the number of rows with each phenotype to create gaps in the plot
+DN_length <- sum(phenotype_data$lineage == "Double Negative")
+T_helper_length <- sum(phenotype_data$lineage == "T Helper")
+Cytotoxic_length <- sum(phenotype_data$lineage == "Cytotoxic T")
+DP_length <- sum(phenotype_data$lineage == "Double Positive")
+
 # plot the data with different annotations
 pheatmap(phenotype_data[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = paste("Pop", 1:nrow(sample_populations)), 
-           annotation_row = phenotype_annot,  gaps_row = c(17, 29, 35),
+           annotation_row = phenotype_annot,  gaps_row = c(DN_length, DN_length + T_helper_length, DN_length + T_helper_length + Cytotoxic_length),
+           cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
+         color = viridis_colors, cutree_rows = 2)
+
+
+```
+
+```{r fig.height = 5}
+pheatmap(phenotype_data[, 4:21], cluster_rows = FALSE, cluster_cols = FALSE,
+           labels_row = paste("Pop", 1:nrow(sample_populations)), 
+           annotation_row = phenotype_annot,  gaps_row = c(DN_length, DN_length + T_helper_length, DN_length + T_helper_length + Cytotoxic_length),
            cellwidth = 15, cellheight = 15, angle_col = 45, annotation_colors = my_colors,
          color = viridis_colors, cutree_rows = 2)
 ```
+
 
 Want to get the percentages added so can plot the percentages with the new 
 
@@ -1031,7 +1047,7 @@ corr <- sample_populations_all_groups %>%
 corr <- round(cor(corr), 1)
 
 # plot the population correlation plot separated by the lineages
-superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), left.label.col = c(rep("darkturquoise", 17), rep("plum3", 12), rep("hotpink", 6), rep("orange", 1)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 3, left.label.text.size = 3)
+superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), left.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 3, left.label.text.size = 3)
 
 
 ```
@@ -1226,7 +1242,7 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   scale_fill_identity() +
   geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 6) +
+  facet_wrap(~population, scales = "free_x", ncol = 8) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE, color = "white") +
   xlab("Percentage of Cells") +
   ylab("log10 CFU") +
@@ -1274,6 +1290,53 @@ fitted_models %>%
   row_spec(0:nrow(fitted_models), color = "black")
 
 ```
+
+Visualization for individual populations
+```{r}
+pop_pick <- facets_for_CFUs %>%
+  filter(population == "Pop32")
+
+ggplot(pop_pick, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.05) + 
+  scale_fill_identity() +
+  geom_point(color = "black", size = 4) +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE, color = "white", size = 8) +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Population 32 and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+
+pop_timeseries <- facets_for_timeseries  %>%
+  filter(population == "Pop3")
+
+ggplot(pop_timeseries, aes(x = factor(Timepoint, levels = c("30", "60", "90")),
+                                 y = average_percent, group = Group, color = Group)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.2) +
+  scale_fill_identity() +
+  geom_point(size = 4) +
+  geom_line(size = 2) +
+  xlab("Days Post-Infection") +
+  ylab("Average Percent of Total Live Leukocytes") +
+  ggtitle("Pop 3") +
+  scale_color_manual(values = c("black", "white")) +
+  theme_gray() +
+    theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        strip.text.x = element_text(size = 10),
+        axis.title = element_text(size = 17),
+        title = element_text(size = 20),
+        legend.text = element_text(size=18),
+        legend.key.size = unit(1.5, "line"))
+
+```
+
+
 
 Different timepoints for hypothesis
 ```{r}
