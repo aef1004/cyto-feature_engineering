@@ -313,7 +313,7 @@ plotGate(gs_FMO[[3]])
 
 Pull out the individual FMOS
 
-```{r}
+```{r fig.width = 5}
 
 CD3_FMO <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
@@ -441,6 +441,9 @@ cowplot::plot_grid(plotlist = FMO_plots)
 # this works for plotting the right data!!! 
 # now I just need to figure out how to do the vertical line....
 # Problem with CD44 because it's pulling in the CD4 data as well...
+testing <- FMO_gated_data %>%
+  clean_FMO_after_gate() %>%
+  gather(key = "marker", value = "MFI", -filename, -`SSC-A`)
 
 right <- testing %>%
   filter(str_detect(testing$filename, testing$marker)) %>%
@@ -458,13 +461,14 @@ right_quantile <- full_join(right, add_quantile)
 ggplot(right_quantile, aes(x = MFI, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
-  facet_wrap(~ marker) +
+  facet_wrap(~ marker, nrow = 3) +
    ylab("") +
    geom_vline(mapping = aes(xintercept = quantile_99)) +
   theme_gray()+
   theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 12))+
+  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(0, 20000))
 
 
 ```
@@ -510,7 +514,7 @@ p20 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
 
 grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
-             nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
+             nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=20, lineheight=1)))
 ```
 
 Gating the sample data
