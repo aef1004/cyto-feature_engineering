@@ -493,7 +493,7 @@ all_gated <- all_gated_df %>%
                     labels = c(0, 1)),
          CD27 = cut(CD27, breaks = c(min(CD27), gate_mindensity_amy(all_gated_for_plot, "CD27"), max(CD27)), 
                     labels = c(0, 1))) %>%
-  mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
+  mutate_at(vars(-group_cols()), list(~tidyr::replace_na(.,0))) %>%
   select(-`SSC.A`) %>%
   group_by(HLA_DR, CD19, CD3, CD45, CD27, filename) %>%
   dplyr::mutate(cell_no = n()) %>%
@@ -504,6 +504,7 @@ all_gated <- all_gated_df %>%
          percentage = (100*cell_no / total_count_by_file)) %>%
   mutate_if(is.factor, ~as.numeric.factor(.)) %>%
   ungroup() 
+
 ```
 
 Data visualization
@@ -583,7 +584,7 @@ test_rearrange <- test_rearrange %>%
 # add back in the percentage data 
 sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
   select(population, percentage, -filename) %>%
-  mutate_all(funs(replace_na(., 0)))
+  mutate_all(list(~replace_na(., 0)))
 ```
 
 Data visualization
@@ -613,7 +614,7 @@ Confirm pipeline populations with manual gating
 
 # read in and clean manual gating percentage data
 manual_gating <- read_xlsx("../Data/flow/Human_Clinical/Manual_gating.xlsx") %>%
-  dplyr::rename(`population` = "..1",
+  dplyr::rename(`population` = "...1",
                 percent_manual = "Manual percent") %>%
   na.omit()
 
