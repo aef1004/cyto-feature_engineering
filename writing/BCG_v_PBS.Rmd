@@ -257,7 +257,7 @@ gs_FMO
 ```{r fig.height = 8, fig.width = 4}
 # Apply the initial gating to this data, to filter to only measurements
 # on live lymphocyte cells. This may take a minute.
-gating(initial_gate, gs_FMO)
+gt_gating(initial_gate, gs_FMO)
 
 # You can plot the results of this gating with `plotGate`. For example, to plot
 # the gating for the first sample, run:
@@ -271,7 +271,7 @@ Now that the initial gating has been applied, to limit the data to measurements 
 ```{r}
 # Pull out the data from the 'live' node of the gating set (the last node
 # in the initial gating strategy).
-FMO_gated_data <- getData(gs_FMO, "live") %>% 
+FMO_gated_data <- gs_pop_get_data(gs_FMO, "live") %>% 
   as.flowSet() 
 
 # Write a function to extract data from an item of a 'flowSet' object
@@ -319,10 +319,10 @@ ncfs_FMO_redo <- read.ncdfFlowSet(FMO_fcsFiles_redo)
 gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
 
 # gate the samples
-gating(initial_gate, gs_FMO_redo)
+gt_gating(initial_gate, gs_FMO_redo)
 
 # Pull out the data
-FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
+FMO_gated_data_redo <- gs_pop_get_data(gs_FMO_redo, "live") %>% 
   as.flowSet() 
 
 FMO_gated_df_redo <- tidy_flow_set(FMO_gated_data_redo)
@@ -669,7 +669,7 @@ ncfs <- read.ncdfFlowSet(fcsFiles)
 gs <- GatingSet(ncfs)
 
 # gate the samples
-gating(initial_gate, gs)
+gt_gating(initial_gate, gs)
 
 # View the gates
 plotGate(gs[[12]])
@@ -679,7 +679,7 @@ plotGate(gs[[12]])
 
 
 # Pull out the gated data
-gated_data <- getData(gs, "live") %>% 
+gated_data <- gs_pop_get_data(gs, "live") %>% 
   as.flowSet() 
 
 
@@ -699,10 +699,10 @@ D90_ncfs <- read.ncdfFlowSet(D90_fcsFiles)
 D90_gs <- GatingSet(D90_ncfs)
 
 # gate the samples
-gating(D90_initial_gate, D90_gs)
+gt_gating(D90_initial_gate, D90_gs)
 
 # Pull out the data
-D90_gated_data <- getData(D90_gs, "live") %>% 
+D90_gated_data <- gs_pop_get_data(D90_gs, "live") %>% 
   as.flowSet() 
 
 # initialize the gated data df
@@ -868,7 +868,7 @@ all_gated <- all_gated_df %>%
          TNF = cut(TNF, breaks = c(min(TNF), quantile(TNF_FMO$TNF, 0.99),
                                            max(TNF)), labels = c(0, 1))) %>%
   select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69) %>%
-  mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
+  mutate_at(vars(-group_cols()), list(~tidyr::replace_na(.,0))) %>%
   group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
            TNF, filename) %>%
@@ -928,7 +928,7 @@ add_pops <- left_join(all_options, sample_populations)
 # add populations to the original gated data and replace NA percentages with 0
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
-  mutate_all(funs(replace_na(., 0)))
+  mutate_all(list(~replace_na(., 0)))
 
 
 ```
@@ -1024,7 +1024,7 @@ add_pops <- left_join(all_options, phenotype_data)
 # add the percentages back
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
-  mutate_all(funs(replace_na(., 0))) 
+  mutate_all(list(~replace_na(., 0))) 
 
 # confirm that the populations were added correctly
 unique(sample_populations_all_groups$population)
