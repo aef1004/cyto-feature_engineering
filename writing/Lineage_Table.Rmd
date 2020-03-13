@@ -51,3 +51,6 @@ cell_type_df %>%
   print()
 ```
 
+```{r}
+sessionInfo()
+```

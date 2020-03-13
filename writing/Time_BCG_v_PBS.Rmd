@@ -1479,3 +1479,6 @@ ggplot(combine_time, aes(Cells, Time)) +
   theme_bw()
 ```
 
+```{r}
+sessionInfo()
+```

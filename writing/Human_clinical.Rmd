@@ -660,3 +660,6 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
         title = element_text(size = 15)) 
 ```
 
+```{r}
+sessionInfo()
+```
