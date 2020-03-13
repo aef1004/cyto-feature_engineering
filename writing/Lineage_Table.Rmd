@@ -52,5 +52,5 @@ cell_type_df %>%
 ```
 
 ```{r}
-sessionInfo()
+BiocManager::valid()
 ```

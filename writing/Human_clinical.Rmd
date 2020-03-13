@@ -661,5 +661,5 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
 ```
 
 ```{r}
-sessionInfo()
+BiocManager::valid()
 ```

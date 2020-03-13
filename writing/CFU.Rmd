@@ -62,5 +62,5 @@ ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
 ```
 
 ```{r}
-sessionInfo()
+BiocManager::valid()
 ```

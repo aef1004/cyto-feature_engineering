@@ -1480,5 +1480,5 @@ ggplot(combine_time, aes(Cells, Time)) +
 ```
 
 ```{r}
-sessionInfo()
+BiocManager::valid()
 ```
