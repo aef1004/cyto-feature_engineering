@@ -776,7 +776,7 @@ ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) +
 ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
   geom_density() + 
   geom_gate("live") + 
-  xlim(-100,50000) + 
+  xlim(-100,50000) +
   xlab("Zombie NIR-A") +
   ylab("Density") +
   ggtitle("Live") +
