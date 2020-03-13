@@ -315,132 +315,6 @@ Pull out the individual FMOS
 
 ```{r fig.width = 5}
 
-CD3_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD3_20190218_153937_Unmixed.fcs")
-
-CD4_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD4_June_6_Redo_Unmixed.fcs")
-
-CD8_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD8_20190218_154138_Unmixed.fcs")
-
-CD27_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD27_20190218_154154_Unmixed.fcs")
-
-CD28_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD28_20190218_154012_Unmixed.fcs")
-
-CD44_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD44_20190218_154054_Unmixed.fcs")
-
-CD62L_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD62L_20190218_153953_Unmixed.fcs") 
-
-CD69_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD69_June_6_Redo_Unmixed.fcs")
-
-CD103_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD103_20190218_154045_Unmixed.fcs")
-
-CD122_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD122_20190218_154003_Unmixed.fcs")
-
-CD153_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CD153_20190218_154205_Unmixed.fcs")
-
-CTLA4_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_CTLA4_20190218_154146_Unmixed.fcs")
-
-FoxP3_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_FoxP3_20190218_154037_Unmixed.fcs") 
-
-IFN_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_IFN-G_20190218_154029_Unmixed.fcs")
-
-IL_10_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_IL-10_20190218_154102_Unmixed.fcs") 
-
-IL_17_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_IL-17_20190218_153945_Unmixed.fcs")
-
-KLRG1_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_KLRG1_20190218_154214_Unmixed.fcs") 
-
-PD1_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_PD1_20190218_154021_Unmixed.fcs")
-
-Sca1_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_Sca1_20190218_153845_Unmixed.fcs")
-
-TNF_FMO <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  dplyr::filter(filename == "FMOs_TNF-a_20190218_154111_Unmixed.fcs")
-
-##########################
-# tried to convert to tidy data, but ggplot still plots all of the FMO files for each marker
-testing <- FMO_gated_data %>%
-  clean_FMO_after_gate() %>%
-  gather(key = "marker", value = "MFI", -filename, -`SSC-A`)
-
-ggplot(testing, aes(x = MFI, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  facet_wrap(~ marker) +
-   ylab("") +
-   geom_vline(xintercept = quantile(CD3_FMO$CD3, 0.99)) +
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-###################
-
-# try to use purrr to plot the 
-library(cowplot)
-clean_test <- FMO_gated_data %>%
-  clean_FMO_after_gate() 
-
-
-gg_fun <- function(x, y) {
-  ggplot(clean_data, aes(x = .data[[x]], y = .data[[y]])) +
-  geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   ylab("") +
-  theme_gray()+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-}
-
-markers <- names(clean_test[2:21])
-
-
-FMO_plots <- map(markers, ~gg_fun(.x, "SSC-A")+
-                   facet_wrap(~filename))
-
-cowplot::plot_grid(plotlist = FMO_plots)
-
-############
-# this works for plotting the right data!!! 
-# now I just need to figure out how to do the vertical line....
-# Problem with CD44 because it's pulling in the CD4 data as well...
 testing <- FMO_gated_data %>%
   clean_FMO_after_gate() %>%
   gather(key = "marker", value = "MFI", -filename, -`SSC-A`)
@@ -471,50 +345,6 @@ ggplot(right_quantile, aes(x = MFI, y = `SSC-A`)) +
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(0, 20000))
 
 
-```
-
-Feature engineering FMOs and plot
-
-```{r fig.width = 8, fig.height= 6 warning=FALSE}
-
-FMO_ggplot <- function(df, x_axis, x_title) {
-  ggplot(df, aes(x = x_axis, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   xlab(x_title) +
-   ylab("") +
-   geom_vline(xintercept = quantile(x_axis, 0.99)) +
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-}
-
-p1 <- FMO_ggplot(CD3_FMO, CD3_FMO$CD3, "CD3")
-p2 <- FMO_ggplot(CD4_FMO, CD4_FMO$CD4, "CD4")
-p3 <- FMO_ggplot(CD8_FMO, CD8_FMO$CD8, "CD8")
-p4 <- FMO_ggplot(FoxP3_FMO, FoxP3_FMO$FoxP3, "FoxP3") # this plot is removed because we are not going to be using this marker
-p5 <- FMO_ggplot(CD27_FMO, CD27_FMO$CD27, "CD27")
-p6 <- FMO_ggplot(CD28_FMO, CD28_FMO$CD28, "CD28")
-p7 <- FMO_ggplot(CD44_FMO, CD44_FMO$CD44, "CD44")
-p8 <- FMO_ggplot(IL_10_FMO, IL_10_FMO$IL_10, "IL_10")
-p9 <- FMO_ggplot(CD62L_FMO, CD62L_FMO$CD62L, "CD62L")
-p10 <- FMO_ggplot(CD69_FMO, CD69_FMO$CD69, "CD69") # this plot is removed because we are not going to be using this marker
-p11 <- FMO_ggplot(CD103_FMO, CD103_FMO$CD103, "CD103")
-p12 <- FMO_ggplot(CD122_FMO, CD122_FMO$CD122, "CD122")
-p13 <- FMO_ggplot(CD153_FMO, CD153_FMO$CD153, "CD153")
-p14 <- FMO_ggplot(CTLA4_FMO, CTLA4_FMO$CTLA4, "CTLA4")
-p15 <- FMO_ggplot(IL_17_FMO, IL_17_FMO$IL_17, "IL_17")
-p16 <- FMO_ggplot(IFN_FMO, IFN_FMO$IFN, "IFN")
-p17 <- FMO_ggplot(TNF_FMO, TNF_FMO$TNF, "TNF")
-p18 <- FMO_ggplot(KLRG1_FMO, KLRG1_FMO$KLRG1, "KLRG1")
-p19 <- FMO_ggplot(PD1_FMO, PD1_FMO$PD1, "PD1")
-p20 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
-
-
-grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
-             p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
-             nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=20, lineheight=1)))
 ```
 
 Gating the sample data
@@ -613,6 +443,10 @@ Remove FoxP3
 Remove CD69 - spreading from Sca1 makes the marker unusable
 Remove D30 PBS D - flow cytometry outlier, both within group, timepoint, and all samples
 ```{r}
+right_quantile %>%
+  select(marker, quantile_99) %>%
+  unique()
+
 
 all_gated <- all_gated_df %>%
   dplyr::filter(filename != "D30_Lung_Group 1 D_20190218_153300_Unmixed.fcs") %>%
