@@ -1331,35 +1331,6 @@ supp_4c
 
 ggsave("../figures/supp_4c.jpeg", supp_4c, dpi = 300)
 ```
-Stitch figures together
-```{r}
-library(cowplot)
-
-fig_3a %>%
-  as.grob()
-
-plot_grid(fig_3a, fig_3b, labels = c('a', 'b'), label_size = 12)
-
-ggarrange(fig_3a, fig_3b, 
-          labels = c("A", "B"),
-          ncol = 2, nrow = 1)
-
-grid.arrange(grobs = list(fig_3a[[4]]), layout_matrix = lm)
-
-arrangeGrob(fig_3a[[4]], fig_3b[[2]], ncol = 2)
-
-# example online
-hmdat=rbind(c(1,2,3),
-            c(3,4,5),
-            c(5,6,7))
-hm=pheatmap(hmdat)
-qp=qplot(1,1)
-
-lm=rbind(c(1,2,2),
-         c(1,2,2))
-
-grid.arrange(grobs = list(qp,hm[[4]]), layout_matrix = lm)
-```
 
 
 ```{r}

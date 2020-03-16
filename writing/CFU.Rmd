@@ -37,7 +37,7 @@ lung_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
   filter(Organ == "Lung")
 
 ```
-
+guide_legend(override.aes = aes(label = "")
 Plot the lung CFU data and run t tests
 ```{r fig.width = 3, fig.height = 1.2}
 
@@ -48,10 +48,10 @@ lung_CFU <- lung_CFU %>%
          Group = str_replace(Group, "BCG", "Vaccinated"))
 
 ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
-  geom_jitter(width = 0.2) +
+  geom_jitter(width = 0.2, key_glyph = draw_key_pointrange) +
   facet_wrap("Day", ncol = length(unique(lung_CFU$Day)), 
              labeller = label_both) +
-  scale_color_manual(values = viridis_colors) +
+  scale_color_manual(values = c("#56C667FF", "#3F4788FF")) +
   stat_compare_means(method = "t.test", label.y = 7.5) +
   xlab("Mouse Group") +
   ylab("log 10 CFU") +
