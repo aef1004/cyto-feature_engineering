@@ -21,6 +21,7 @@ library(openCyto)
 library(data.table)
 library(flowCore)
 library(ggcyto)
+library(grid)
 library(pheatmap)
 library(stringr)
 library(readxl)
@@ -434,225 +435,59 @@ TNF_FMO <- FMO_gated_data %>%
 
 Feature engineering FMOs and plot
 
-```{r fig.width = 8, fig.height= 6 warning=FALSE}
-p1 <-  ggplot(CD3_FMO, aes(x = CD3, y = `SSC-A`)) +
+```{r fig.width=8, fig.height=6}
+FMO_ggplot <- function(df, x_axis, x_title) {
+  ggplot(df, aes(x = x_axis, y = `SSC-A`)) +
    geom_hex(bins = 100, na.rm = TRUE) +
    scale_fill_viridis_c() +
+   xlab(x_title) +
    ylab("") +
-   geom_vline(xintercept = quantile(CD3_FMO$CD3, 0.99)) +
+   geom_vline(xintercept = quantile(x_axis, 0.99)) +
   theme_gray()+
   theme(axis.text = element_text(size =12),
         axis.title = element_text(size = 20))+
   scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
+}
+p1 <- FMO_ggplot(CD3_FMO, CD3_FMO$CD3, "CD3")
+p2 <- FMO_ggplot(CD4_FMO, CD4_FMO$CD4, "CD4")
+p3 <- FMO_ggplot(CD8_FMO, CD8_FMO$CD8, "CD8")
 
-p2 <- ggplot(CD4_FMO, aes(x = CD4, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   ylab("") +
-   geom_vline(xintercept = quantile(CD4_FMO$CD4, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
+p5 <- FMO_ggplot(CD27_FMO, CD27_FMO$CD27, "CD27")
+p6 <- FMO_ggplot(CD28_FMO, CD28_FMO$CD28, "CD28")
+p7 <- FMO_ggplot(CD44_FMO, CD44_FMO$CD44, "CD44")
+p8 <- FMO_ggplot(IL_10_FMO, IL_10_FMO$IL_10, "IL_10")
+p9 <- FMO_ggplot(CD62L_FMO, CD62L_FMO$CD62L, "CD62L")
 
+p11 <- FMO_ggplot(CD103_FMO, CD103_FMO$CD103, "CD103")
+p12 <- FMO_ggplot(CD122_FMO, CD122_FMO$CD122, "CD122")
+p13 <- FMO_ggplot(CD153_FMO, CD153_FMO$CD153, "CD153")
+p14 <- FMO_ggplot(CTLA4_FMO, CTLA4_FMO$CTLA4, "CTLA4")
+p15 <- FMO_ggplot(IL_17_FMO, IL_17_FMO$IL_17, "IL_17")
+p16 <- FMO_ggplot(IFN_FMO, IFN_FMO$IFN, "IFN")
+p17 <- FMO_ggplot(TNF_FMO, TNF_FMO$TNF, "TNF")
+p18 <- FMO_ggplot(KLRG1_FMO, KLRG1_FMO$KLRG1, "KLRG1")
+p19 <- FMO_ggplot(PD1_FMO, PD1_FMO$PD1, "PD1")
+p20 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
 
-p3 <- ggplot(CD8_FMO, aes(x = CD8, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   ylab("") +
-   geom_vline(xintercept = quantile(CD8_FMO$CD8, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-# this plot is removed because we are not going to be using this marker
-p4 <- ggplot(FoxP3_FMO, aes(x = FoxP3, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   ylab("") +
-   geom_vline(xintercept = quantile(FoxP3_FMO$FoxP3, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p5 <- ggplot(CD27_FMO, aes(x = CD27, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD27_FMO$CD27, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p6 <- ggplot(CD28_FMO, aes(x = CD28, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD28_FMO$CD28, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p7 <- ggplot(CD44_FMO, aes(x = CD44, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD44_FMO$CD44, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p8 <- ggplot(IL_10_FMO, aes(x = IL_10, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(IL_10_FMO$IL_10, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p9 <- ggplot(CD62L_FMO, aes(x = CD62L, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-   ylab("") +
-   geom_vline(xintercept = quantile(CD62L_FMO$CD62L, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-# this plot is removed because we are not going to be using this marker
-p10 <- ggplot(CD69_FMO, aes(x = CD69, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD69_FMO$CD69, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p11 <- ggplot(CD103_FMO, aes(x = CD103, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD103_FMO$CD103, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p12 <- ggplot(CD122_FMO, aes(x = CD122, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD122_FMO$CD122, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p13 <- ggplot(CD153_FMO, aes(x = CD153, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CD153_FMO$CD153, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p14 <- ggplot(CTLA4_FMO, aes(x = CTLA4, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(CTLA4_FMO$CTLA4, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p15 <- ggplot(IL_17_FMO, aes(x = IL_17, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(IL_17_FMO$IL_17, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p16 <- ggplot(IFN_FMO, aes(x = IFN, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(IFN_FMO$IFN, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p17 <- ggplot(TNF_FMO, aes(x = TNF, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(TNF_FMO$TNF, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-p18 <- ggplot(KLRG1_FMO, aes(x = KLRG1, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(KLRG1_FMO$KLRG1, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p19 <- ggplot(PD1_FMO, aes(x = PD1, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(PD1_FMO$PD1, 0.99))+
-  theme_gray()+
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20))+
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-p20 <- ggplot(Sca1_FMO, aes(x = Sca1, y = `SSC-A`)) +
-   geom_hex(bins = 100, na.rm = TRUE) +
-   scale_fill_viridis_c() +
-  ylab("") +
-   geom_vline(xintercept = quantile(Sca1_FMO$Sca1, 0.99))+
-  theme_gray() +
-  theme(axis.text = element_text(size =12),
-        axis.title = element_text(size = 20)) +
-  scale_x_continuous(labels = scientific, limits = c(-10000, 20000), breaks = c(-10000, 0, 20000))
-
-
-library(grid)
-grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
+fig_2 <- grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
              nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
+
+ggsave("../figures/fig_2.jpeg", fig_2, dpi = 300)
 ```
+
+
+```{r fig.width = 8, fig.height= 6 warning=FALSE}
+
+fig_2 <- grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
+             p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
+             nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=14, lineheight=1)))
+
+fig_2
+
+ggsave("../figures/fig_2.jpeg", fig_2, dpi = 300)
+```
+
 
 Gating the sample data
 
@@ -939,7 +774,7 @@ nrow(total_phenotypes)
 sample_populations <- all_gated %>%
   dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
   select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
-  group_by(CD3, CD4, CD8, CD44, CD1032 Sca1, IL_17, CTLA4, CD27, 
+  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
            TNF) %>%
   unique() %>%
@@ -1271,7 +1106,7 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   scale_fill_identity() +
   geom_point(color = "black") +
   geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
-  facet_wrap(~population, scales = "free_x", ncol = 8) +
+  facet_wrap(~population, scales = "free_x", ncol = 6) +
   stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE, color = "white") +
   xlab("Percentage of Cells") +
   ylab("log10 CFU") +
@@ -1321,6 +1156,25 @@ fitted_models %>%
   row_spec(0:nrow(fitted_models), color = "black")
 
 ```
+
+```{r fig.height = 5, fig.width = 5}
+ggplot(facets_for_CFUs, aes(percentage, CFU)) +
+  geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf, alpha = 0.05) + 
+  scale_fill_identity() +
+  geom_point(color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "#3F4788FF") +
+  facet_wrap(~population, scales = "free_x", ncol = 8) +
+  stat_smooth_func(geom= "text", method = "lm", hjust = 0, parse = TRUE, color = "white") +
+  xlab("Percentage of Cells") +
+  ylab("log10 CFU") +
+  ggtitle("Population and CFU Linear regression") +
+  theme(axis.text.x = element_text(size = 9, hjust = 1, angle = 45),
+        axis.text.y = element_text(size = 9),
+        axis.title = element_text(size = 15),
+        title = element_text(size = 17))
+```
+
 
 Visualization for individual populations
 ```{r}
@@ -1505,4 +1359,5 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
 
 ```{r}
 BiocManager::valid()
+sessionInfo()
 ```
