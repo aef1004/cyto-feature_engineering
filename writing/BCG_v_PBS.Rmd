@@ -16,8 +16,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 First, the packages must be loaded.
 
-try removing following packages
-library(flowClust)
 ```{r warning= FALSE, message = FALSE}
 library(openCyto)
 library(data.table)
@@ -1283,7 +1281,7 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
 
-ggsave("../figures/fig5.jpeg", dpi = 300)
+ggsave("../figures/fig_5b.jpeg", dpi = 300)
 
 fitted_models <- facets_for_CFUs %>% 
   group_by(population) %>% 

@@ -59,5 +59,7 @@ ggplot(lung_CFU, aes(x = Group, y = CFU, color = Group)) +
   ggtitle("Lung Bacterial Load") +
   theme_bw()
 
+ggsave("../figures/fig_5a.jpeg")
+
 ```
 
