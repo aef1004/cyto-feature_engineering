@@ -707,7 +707,7 @@ all_gated <- all_gated_df %>%
          TNF = cut(TNF, breaks = c(min(TNF), quantile(TNF_FMO$TNF, 0.99),
                                            max(TNF)), labels = c(0, 1))) %>%
   select(-Zombie.NIR.A, -AF.A, -SSC.A, -FoxP3, -CD69) %>%
-  mutate_at(vars(-group_cols()), funs(tidyr::replace_na(.,0))) %>%
+  mutate_at(vars(-group_cols()), list(~tidyr::replace_na(.,0))) %>%
   group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
            TNF, filename) %>%
@@ -725,7 +725,7 @@ Data visualization
 
 We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD3+ cells that constitute >0.5% of total live leukocytes in a sample.
 
-```{r fig.height = 2.25, fig.width = 1.75}
+```{r fig.height = 3, fig.width = 2.5}
 # to view all of the possible combinations
 total_phenotypes <- all_gated %>%
     select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
@@ -735,24 +735,14 @@ total_phenotypes <- all_gated %>%
   unique() %>%
   ungroup() %>%
  select(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
-  mutate_all(~as.numeric.factor(.))
+  mutate_all(~as.numeric.factor(.)) %>%
+  rename(`IL-17` = `IL_17`,
+         `IL-10` = `IL_10`)
 
 supp_2 <-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
          color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) 
 
-
 ggsave("../figures/supp_2.jpeg", supp_2, dpi = 300)
-
-# tiff("../figures/supp_2.tiff", width = 7, height = 10, units = 'in', res = 300)
-# pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-#          color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) 
-# dev.off()
-# 
-# ggsave(supp_2,
-#   plot = supp_2,
-#   device = jpeg,
-#   path = "../figures",
-#   dpi = 300)
 
 
 # gives the total number of populations
@@ -821,7 +811,9 @@ phenotype_data <- sample_populations %>%
   select(lineage, cell, resident, CD3, CD4, CD8, CD44, CD62L, Sca1, CD103,  CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
   arrange(match(lineage, c("Double Negative", "T Helper", "Cytotoxic T", "Double Positive")), cell, resident) %>%
   mutate(population = c(paste0("Pop", 1: nrow(sample_populations)))) %>%
-  column_to_rownames("population")
+  column_to_rownames("population") %>%
+  rename(`IL-17` = `IL_17`,
+         `IL-10` = `IL_10`)
 
 # create an annotated data frame to add to pheatmap
 phenotype_annot <- phenotype_data %>%
@@ -856,7 +848,9 @@ Want to get the percentages added so can plot the percentages with the new
 ```{r}
 # change the population rownames to column 
 phenotype_data <- phenotype_data %>%
-  rownames_to_column(var = "population")
+  rownames_to_column(var = "population")%>%
+  rename(`IL_17` = `IL-17`,
+         `IL_10` = `IL-10`)
 
 # convert the marker columns of factor class into numeric
 all_gated <- all_gated %>%
@@ -1069,7 +1063,7 @@ Data Visualization
 
 - CFU Correlation
 
-```{r fig.width = 4.5, fig.height= 3.5}
+```{r fig.width = 4.5, fig.height= 5}
 
 # read in the CFU data
 CFUs <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
@@ -1091,6 +1085,7 @@ facets_for_CFUs <- left_join(pops_CFUs, color_for_facets, by = "population")
 
 facets_for_CFUs$population <-  factor(facets_for_CFUs$population, 
                                     levels = paste0("Pop", c(1:length(unique(facets_for_CFUs$population)))))
+
 ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = 0.05) + 
