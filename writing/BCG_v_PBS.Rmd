@@ -15,9 +15,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 First, the packages must be loaded.
+
+try removing following packages
+library(flowClust)
 ```{r warning= FALSE, message = FALSE}
 library(openCyto)
-library(flowClust)
 library(data.table)
 library(flowCore)
 library(ggcyto)
@@ -33,6 +35,7 @@ library(superheat)
 library(kableExtra)
 library(ggpubr)
 library(broom)
+library(jpeg)
 ```
 
 I have created a few functions to make it easier to analyze the data.
@@ -257,7 +260,7 @@ gs_FMO
 ```{r fig.height = 8, fig.width = 4}
 # Apply the initial gating to this data, to filter to only measurements
 # on live lymphocyte cells. This may take a minute.
-gating(initial_gate, gs_FMO)
+gt_gating(initial_gate, gs_FMO)
 
 # You can plot the results of this gating with `plotGate`. For example, to plot
 # the gating for the first sample, run:
@@ -319,7 +322,7 @@ ncfs_FMO_redo <- read.ncdfFlowSet(FMO_fcsFiles_redo)
 gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
 
 # gate the samples
-gating(initial_gate, gs_FMO_redo)
+gt_gating(initial_gate, gs_FMO_redo)
 
 # Pull out the data
 FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
@@ -669,7 +672,7 @@ ncfs <- read.ncdfFlowSet(fcsFiles)
 gs <- GatingSet(ncfs)
 
 # gate the samples
-gating(initial_gate, gs)
+gt_gating(initial_gate, gs)
 
 # View the gates
 plotGate(gs[[12]])
@@ -699,7 +702,7 @@ D90_ncfs <- read.ncdfFlowSet(D90_fcsFiles)
 D90_gs <- GatingSet(D90_ncfs)
 
 # gate the samples
-gating(D90_initial_gate, D90_gs)
+gt_gating(D90_initial_gate, D90_gs)
 
 # Pull out the data
 D90_gated_data <- getData(D90_gs, "live") %>% 
@@ -762,7 +765,7 @@ ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) +
   geom_hex(bins = 50) + 
   scale_fill_viridis_c() +
   geom_gate("lymph") +
-  ylim(-100, 4000000) + 
+  ylim(c(-100, 4000000)) + 
   xlab("FSC-A") +
   ylab("SSC-A") +
   ggtitle("Leukocytes") +
@@ -788,6 +791,21 @@ ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) +
         axis.title = element_text(size = 20),
         title = element_text(size = 20))
 
+
+# problem with plotting - it cuts off the data instead of making the entire x-axis shorter
+ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
+  geom_density() + 
+  geom_gate("live")  +
+  xlab("Zombie NIR-A") +
+  ylab("Density") +
+  ggtitle("Live") +
+  theme_gray() +
+  geom_stats() +
+  labs_cyto("both") + 
+  theme(strip.text = element_blank(),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 20),
+        title = element_text(size = 20))
 ```
 
 Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the 99%.
@@ -898,9 +916,23 @@ total_phenotypes <- all_gated %>%
  select(CD3, CD4, CD8, CD44, CD62L, Sca1, CD103, CTLA4, CD27, CD122, CD153, CD28, PD1, KLRG1, IL_17, IL_10, IFN,  TNF) %>%
   mutate_all(~as.numeric.factor(.))
 
-supp_1 <-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) %>%
-  print()
+supp_2 <-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) 
+
+
+
+
+tiff("../figures/supp_2.tiff", width = 7, height = 10, units = 'in', res = 300)
+pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, show_rownames = FALSE, legend = F, fontsize = 6, angle_col = 45, width = 2, height = 1.5) 
+dev.off()
+
+ggsave(supp_2,
+  plot = supp_2,
+  device = jpeg,
+  path = "../figures",
+  dpi = 300)
+
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -909,7 +941,7 @@ nrow(total_phenotypes)
 sample_populations <- all_gated %>%
   dplyr::filter(CD3 == 1 & percentage > 0.5) %>%
   select(-filename, -percentage, -cell_no, -total_count_by_file) %>%
-  group_by(CD3, CD4, CD8, CD44, CD103, Sca1, IL_17, CTLA4, CD27, 
+  group_by(CD3, CD4, CD8, CD44, CD1032 Sca1, IL_17, CTLA4, CD27, 
            CD153, KLRG1, IFN,  CD122, PD1, CD62L, IL_10, CD28,
            TNF) %>%
   unique() %>%
@@ -1213,7 +1245,7 @@ Data Visualization
 
 - CFU Correlation
 
-```{r fig.width = 3.5, fig.height= 3.5}
+```{r fig.width = 4.5, fig.height= 3.5}
 
 # read in the CFU data
 CFUs <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
@@ -1235,7 +1267,6 @@ facets_for_CFUs <- left_join(pops_CFUs, color_for_facets, by = "population")
 
 facets_for_CFUs$population <-  factor(facets_for_CFUs$population, 
                                     levels = paste0("Pop", c(1:length(unique(facets_for_CFUs$population)))))
-
 ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   geom_rect(aes(fill = col),xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf, alpha = 0.05) + 
@@ -1247,10 +1278,12 @@ ggplot(facets_for_CFUs, aes(percentage, CFU)) +
   xlab("Percentage of Cells") +
   ylab("log10 CFU") +
   ggtitle("Population and CFU Linear regression") +
-  theme(axis.text.x = element_text(size = 9, hjust = 1),
+  theme(axis.text.x = element_text(size = 9, hjust = 1, angle = 45),
         axis.text.y = element_text(size = 9),
         axis.title = element_text(size = 15),
         title = element_text(size = 17))
+
+ggsave("../figures/fig5.jpeg", dpi = 300)
 
 fitted_models <- facets_for_CFUs %>% 
   group_by(population) %>% 
