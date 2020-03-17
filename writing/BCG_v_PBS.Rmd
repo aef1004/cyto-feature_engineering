@@ -1360,20 +1360,18 @@ my_colors <- list(lineage = c(`Double Negative` = "darkturquoise",
                   cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
                 `TSCM` = "#00B0F6", `Unknown` = "yellow"),
                 resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
-plot(my_colors)
-
-viridis_colors
-
-plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-legend("topleft", legend =c("Positive", "Negative"), pch=15, pt.cex=4, cex=1.5, bty='n',
-    col = viridis_colors)
-mtext("expression", at=0.1, cex=1.6, font = 2)
 
 
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-legend("topleft", legend =c("Positive", "Negative"), pch= 22, pt.cex=4.5, cex=1.5, bty='n',
-    col = c("gray", "gray"), pt.bg = viridis_colors)
+legend("topleft", legend =c("Negative", "Positive"), pch= 22, pt.cex=4.5, cex=1.5, bty='n',
+    col = "darkgray", pt.bg = viridis_colors)
 mtext("expression", at=0.1, cex=1.6, font = 2)
+
+plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+legend("topleft", legend =c("Double Negative", "T Helper", "Cytotoxic T", "Double Positive"), 
+       pch= 22, pt.cex=4.5, cex=1.5, bty='n',
+    col = "darkgray", pt.bg = c("darkturquoise", "plum3", "hotpink", "orange"))
+mtext("lineage", at=0.05, cex=1.6, font = 2)
 
 ```
 
