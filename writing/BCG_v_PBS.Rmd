@@ -208,6 +208,28 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 
 # Data Cleaning
 
+Read in the initial gating strategy, which gates to live lymphocytes, into a `gatingTemplate` class.
+
+```{r}
+# Identify the file with the gating strategy 
+ws <- list.files("../Data/flow/BCG_v_PBS", 
+                 pattern = "AmyGating_intracellular.csv", 
+                 full = TRUE)
+ws
+```
+
+```{r}
+# View this template
+dtTemplate <- fread(ws)
+dtTemplate
+```
+
+```{r message = FALSE, warning = FALSE}
+# Read in the gating strategy to a 'gatingTemplate' object
+initial_gate <- gatingTemplate(ws) 
+plot(initial_gate)
+```
+
 Gating the sample data
 
 I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized. I will need to read them in separately and then rename one of the two so that the cases match
@@ -362,27 +384,7 @@ ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) +
 
 ## Data cleaning of FMOs
 
-Read in the initial gating strategy, which gates to live lymphocytes, into a `gatingTemplate` class.
 
-```{r}
-# Identify the file with the gating strategy 
-ws <- list.files("../Data/flow/BCG_v_PBS", 
-                 pattern = "AmyGating_intracellular.csv", 
-                 full = TRUE)
-ws
-```
-
-```{r}
-# View this template
-dtTemplate <- fread(ws)
-dtTemplate
-```
-
-```{r message = FALSE, warning = FALSE}
-# Read in the gating strategy to a 'gatingTemplate' object
-initial_gate <- gatingTemplate(ws) 
-plot(initial_gate)
-```
 
 Read in the flow cytometry data from the FMO experiments.
 
@@ -622,7 +624,7 @@ p14 <- FMO_ggplot(IFN_FMO, IFN_FMO$IFN, "IFN")
 p15 <- FMO_ggplot(TNF_FMO, TNF_FMO$TNF, "TNF")
 p16 <- FMO_ggplot(KLRG1_FMO, KLRG1_FMO$KLRG1, "KLRG1")
 p17 <- FMO_ggplot(PD1_FMO, PD1_FMO$PD1, "PD1")
-p28 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
+p18 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
 
 fig_2 <- grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
              p11, p12, p13, p14, p15, p16, p17, p18,  
@@ -792,7 +794,7 @@ add_pops <- left_join(all_options, sample_populations)
 # add populations to the original gated data and replace NA percentages with 0
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
-  mutate_all(funs(replace_na(., 0)))
+  mutate_all(list(~tidyr::replace_na(.,0))))
 
 # these are the colors I want for the pheatmap annotations
 my_colors <- list(lineage = c(`Double Negative` = "darkturquoise", 
@@ -1347,6 +1349,29 @@ supp_4c
 
 ggsave("../figures/supp_4c.jpeg", supp_4c, dpi = 300)
 ```
+
+```{r}
+
+
+my_colors <- list(lineage = c(`Double Negative` = "darkturquoise", 
+                              `T Helper` = "plum3",
+                              `Cytotoxic T` = "hotpink",
+                              `Double Positive` = "orange"),
+                  cell = c(`Central Mem` = "darkorchid1", `Effector` = "#F8766D",
+                `TSCM` = "#00B0F6", `Unknown` = "yellow"),
+                resident = c(`Resident`  = "maroon2", `Non-resident` = "azure"))
+plot(my_colors)
+
+viridis_colors
+
+plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+legend("topleft", legend =c("Positive", "Negative"), pch=15, pt.cex=4, cex=1.5, bty='n',
+    col = viridis_colors)
+mtext("expression", at=0.1, cex=1.6, font = 2)
+
+
+```
+
 
 
 ```{r}

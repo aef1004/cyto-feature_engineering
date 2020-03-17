@@ -1236,3 +1236,13 @@ sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
 # number of CD3+ populations >0.5%
 nrow(sample_populations)
 ```
+
+# Summary
+```{r}
+FMO_cutoff <- c(0.99, 0.98, 0.95)
+total_pops <- c(12122, 17014, 26158)
+pops_less_0.5 <- c(38, 37, 30)
+
+data.frame(FMO_cutoff, total_pops, pops_less_0.5)
+```
+
