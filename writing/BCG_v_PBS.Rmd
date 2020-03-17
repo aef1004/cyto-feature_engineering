@@ -1370,6 +1370,11 @@ legend("topleft", legend =c("Positive", "Negative"), pch=15, pt.cex=4, cex=1.5, 
 mtext("expression", at=0.1, cex=1.6, font = 2)
 
 
+plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+legend("topleft", legend =c("Positive", "Negative"), pch= 22, pt.cex=4.5, cex=1.5, bty='n',
+    col = c("gray", "gray"), pt.bg = viridis_colors)
+mtext("expression", at=0.1, cex=1.6, font = 2)
+
 ```
 
 
