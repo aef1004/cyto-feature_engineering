@@ -273,7 +273,7 @@ Now that the initial gating has been applied, to limit the data to measurements 
 ```{r}
 # Pull out the data from the 'live' node of the gating set (the last node
 # in the initial gating strategy).
-FMO_gated_data <- getData(gs_FMO, "live") %>% 
+FMO_gated_data <- gs_pop_get_data(gs_FMO, "live") %>% 
   as.flowSet() 
 
 # Write a function to extract data from an item of a 'flowSet' object
@@ -324,7 +324,7 @@ gs_FMO_redo <- GatingSet(ncfs_FMO_redo)
 gt_gating(initial_gate, gs_FMO_redo)
 
 # Pull out the data
-FMO_gated_data_redo <- getData(gs_FMO_redo, "live") %>% 
+FMO_gated_data_redo <- gs_pop_get_data(gs_FMO_redo, "live") %>% 
   as.flowSet() 
 
 FMO_gated_df_redo <- tidy_flow_set(FMO_gated_data_redo)
@@ -451,26 +451,24 @@ FMO_ggplot <- function(df, x_axis, x_title) {
 p1 <- FMO_ggplot(CD3_FMO, CD3_FMO$CD3, "CD3")
 p2 <- FMO_ggplot(CD4_FMO, CD4_FMO$CD4, "CD4")
 p3 <- FMO_ggplot(CD8_FMO, CD8_FMO$CD8, "CD8")
+p4 <- FMO_ggplot(CD27_FMO, CD27_FMO$CD27, "CD27")
+p5 <- FMO_ggplot(CD28_FMO, CD28_FMO$CD28, "CD28")
+p6 <- FMO_ggplot(CD44_FMO, CD44_FMO$CD44, "CD44")
+p7 <- FMO_ggplot(IL_10_FMO, IL_10_FMO$IL_10, "IL_10")
+p8 <- FMO_ggplot(CD62L_FMO, CD62L_FMO$CD62L, "CD62L")
+p9 <- FMO_ggplot(CD103_FMO, CD103_FMO$CD103, "CD103")
+p10 <- FMO_ggplot(CD122_FMO, CD122_FMO$CD122, "CD122")
+p11 <- FMO_ggplot(CD153_FMO, CD153_FMO$CD153, "CD153")
+p12 <- FMO_ggplot(CTLA4_FMO, CTLA4_FMO$CTLA4, "CTLA4")
+p13 <- FMO_ggplot(IL_17_FMO, IL_17_FMO$IL_17, "IL_17")
+p14 <- FMO_ggplot(IFN_FMO, IFN_FMO$IFN, "IFN")
+p15 <- FMO_ggplot(TNF_FMO, TNF_FMO$TNF, "TNF")
+p16 <- FMO_ggplot(KLRG1_FMO, KLRG1_FMO$KLRG1, "KLRG1")
+p17 <- FMO_ggplot(PD1_FMO, PD1_FMO$PD1, "PD1")
+p28 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
 
-p5 <- FMO_ggplot(CD27_FMO, CD27_FMO$CD27, "CD27")
-p6 <- FMO_ggplot(CD28_FMO, CD28_FMO$CD28, "CD28")
-p7 <- FMO_ggplot(CD44_FMO, CD44_FMO$CD44, "CD44")
-p8 <- FMO_ggplot(IL_10_FMO, IL_10_FMO$IL_10, "IL_10")
-p9 <- FMO_ggplot(CD62L_FMO, CD62L_FMO$CD62L, "CD62L")
-
-p11 <- FMO_ggplot(CD103_FMO, CD103_FMO$CD103, "CD103")
-p12 <- FMO_ggplot(CD122_FMO, CD122_FMO$CD122, "CD122")
-p13 <- FMO_ggplot(CD153_FMO, CD153_FMO$CD153, "CD153")
-p14 <- FMO_ggplot(CTLA4_FMO, CTLA4_FMO$CTLA4, "CTLA4")
-p15 <- FMO_ggplot(IL_17_FMO, IL_17_FMO$IL_17, "IL_17")
-p16 <- FMO_ggplot(IFN_FMO, IFN_FMO$IFN, "IFN")
-p17 <- FMO_ggplot(TNF_FMO, TNF_FMO$TNF, "TNF")
-p18 <- FMO_ggplot(KLRG1_FMO, KLRG1_FMO$KLRG1, "KLRG1")
-p19 <- FMO_ggplot(PD1_FMO, PD1_FMO$PD1, "PD1")
-p20 <- FMO_ggplot(Sca1_FMO, Sca1_FMO$Sca1, "Sca1")
-
-fig_2 <- grid.arrange(p1, p2, p3, p5, p6, p7, p8, p9,
-             p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, 
+fig_2 <- grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
+             p11, p12, p13, p14, p15, p16, p17, p18,  
              nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
 
 ggsave("../figures/fig_2.jpeg", fig_2, dpi = 300)
@@ -503,7 +501,7 @@ plotGate(gs[[12]])
 
 
 # Pull out the gated data
-gated_data <- getData(gs, "live") %>% 
+gated_data <- gs_pop_get_data(gs, "live") %>% 
   as.flowSet() 
 
 
@@ -526,7 +524,7 @@ D90_gs <- GatingSet(D90_ncfs)
 gt_gating(D90_initial_gate, D90_gs)
 
 # Pull out the data
-D90_gated_data <- getData(D90_gs, "live") %>% 
+D90_gated_data <- gs_pop_get_data(D90_gs, "live") %>% 
   as.flowSet() 
 
 # initialize the gated data df
