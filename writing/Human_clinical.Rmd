@@ -352,14 +352,14 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
 Initial gating of sample data
-```{r warning = FALSE, fig.width = 9, fig.height=5, warning=FALSE}
+```{r fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
 ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
 
 # only for viewing that read in 
-dtTemplate <- fread(ws, autostart = 1L) 
+dtTemplate <- fread(ws) 
 
-initial_gate <- gatingTemplate(ws, autostart = 1L) 
+initial_gate <- gatingTemplate(ws) 
 
 fcsFile <- list.files("../Data/flow/Human_Clinical/", 
                        pattern = ".fcs", full = TRUE)
@@ -371,13 +371,13 @@ ncfs <- read.ncdfFlowSet(fcsFile)
 gs <- GatingSet(ncfs)
 
 # gate the samples
-gating(initial_gate, gs)
+gt_gating(initial_gate, gs)
 
 # View the gates
 plotGate(gs[[1]])
 
 # Pull out the data
-gated_data <- getData(gs, "leukocytes") %>% 
+gated_data <- gs_pop_get_data(gs, "leukocytes") %>% 
   as.flowSet() 
 
 # initialize the gated data df
@@ -463,10 +463,12 @@ p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
         legend.title=element_text(size=16),
         legend.text=element_text(size=rel(1.5)))
 
-grid.arrange(p1, p2, p3, p4, p5, 
+fig_6a <- grid.arrange(p1, p2, p3, p4, p5, 
              nrow = 2)
 
+fig_6a 
 
+ggsave("../figures/fig_6a.jpeg", fig_6a, dpi = 300)
 ```
 
 Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the minimum density between the single color peaks.
@@ -522,8 +524,12 @@ total_phenotypes <- all_gated %>%
  # mutate_all(~as.numeric.factor(.))
 
   
-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+fig_6b <- pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
          color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 12)
+
+fig_6b
+
+ggsave("../figures/fig_6b.jpeg", fig_6b, dpi = 300)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -567,11 +573,15 @@ annotation <- test_rearrange %>%
   mutate(lineage = as.factor(lineage)) %>%
   column_to_rownames("population")
   
-pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
+fig_6c <- pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = rownames(annotation), 
            annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
            cellwidth = 15, cellheight = 15, angle_col = 45, legend = F,
            main = "Leukocytes")
+
+fig_6c
+
+ggsave("../figures/fig_6c.jpeg", fig_6c, dpi = 300)
 ```
 
 Note I cannot do a correlation plot because I only have 1 sample (not multiple datapoints to see how similar populations are to each other)
@@ -592,8 +602,10 @@ Data visualization
 - percentage of cells in each population
 
 ```{r}
-ggplot(sample_populations_all_groups, aes(x = factor(population, 
-                                                     levels = c(paste0("Pop", 1:nrow(sample_populations_all_groups)))), 
+
+fig_6d <- ggplot(sample_populations_all_groups, aes(x = factor(population, 
+                                                     levels = c(paste0("Pop",
+                                                                       1:nrow(sample_populations_all_groups)))), 
                                           y = percentage, fill = "pink")) +
   geom_bar(stat = "identity") +
   xlab("Populations") +
@@ -607,6 +619,10 @@ ggplot(sample_populations_all_groups, aes(x = factor(population,
         axis.title = element_text(size = 20),
         title = element_text(size = 20),
         legend.position = "none")
+
+fig_6d
+
+ggsave("../figures/fig_6d.jpeg", fig_6d, dpi = 300)
 ```
 
 Confirm pipeline populations with manual gating
@@ -634,7 +650,7 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
-comparison[1:14,] %>%
+fig_6e <- comparison[1:14,] %>%
   mutate(Population = population,
          `% Based On Manual Gating` = percent_manual,
          `% Based on Automated Pipeline` = percent_pipeline,
@@ -643,11 +659,14 @@ comparison[1:14,] %>%
   select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
   kable(align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), font_size = 25) %>%
-  row_spec(0:nrow(comparison), color = "black") %>%
-  print()
+  row_spec(0:nrow(comparison), color = "black") 
+
+fig_6e
+
+save_kable(fig_6e, file = "../figures/fig_6e.jpeg")
 
 # compare the two gating types with manual v. pipeline plot
-ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
+fig_6f <- ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point(size = 3) +
   geom_abline(slope = 1, intercept = 0, size = 1) +
   stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman", size = 7) +
@@ -658,5 +677,9 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme(axis.title = element_text(size = 20),
         axis.text = element_text(size = 15),
         title = element_text(size = 15)) 
+
+fig_6f
+
+ggsave("../figures/fig_6f.jpeg", fig_6f, dpi = 300)
 ```
 
