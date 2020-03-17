@@ -351,6 +351,7 @@ viridis_colors <- c("#3F4788FF", "#56C667FF")
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
+## Data cleaning
 Initial gating of sample data
 ```{r fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
@@ -404,6 +405,11 @@ all_gated_for_plot <- all_gated_df %>%
 
 
  
+
+```
+
+## Clear separation of populations --> Gate with minimum density between + and - populations
+```{r}
 p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
@@ -471,6 +477,7 @@ fig_6a
 ggsave("../figures/fig_6a.jpeg", fig_6a, dpi = 300)
 ```
 
+## Feature engineer the data
 Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the minimum density between the single color peaks.
 
 ```{r}
@@ -509,6 +516,7 @@ all_gated <- all_gated_df %>%
 
 ```
 
+## Initial identification of populations plot
 Data visualization
 
 We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD45+ leukocytes.
@@ -545,6 +553,7 @@ sample_populations <- all_gated %>%
 
 ```
 
+## Filter to smaller subset of populations and plot
 Data visualization
 
 - phenotype plot
@@ -597,6 +606,7 @@ sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
   mutate_all(list(~replace_na(., 0)))
 ```
 
+# Bar plot
 Data visualization
 
 - percentage of cells in each population
