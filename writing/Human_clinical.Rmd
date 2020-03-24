@@ -409,65 +409,28 @@ all_gated_for_plot <- all_gated_df %>%
 ```
 
 ## Clear separation of populations --> Gate with minimum density between + and - populations
-```{r}
-p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "HLA_DR")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
+```{r fig.width = 5.25, fig.height = 3}
 
-p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
+separation_ggplot <- function(df, x_axis, x_title) {
+  ggplot(df, aes(x = x_axis, y = SSC.A)) +
    geom_hex(bins = 100) +
    scale_fill_viridis_c() +
-   xlim(-1, 5) +
+   xlab(x_title) +
    ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
+   geom_vline(xintercept = gate_mindensity_amy(df, x_title), size = .7) +
   theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20),
+        legend.title=element_text(size=12),
+        legend.text=element_text(size=rel(.75)),
+        legend.key.size = unit(.5, "cm"))
+}
 
-p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD45")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD27")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
+p1 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$HLA_DR, "HLA_DR")
+p2 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD19, "CD19")
+p3 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD3, "CD3")
+p4 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD45, "CD45")
+p5 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD27, "CD27")
 
 fig_6a <- grid.arrange(p1, p2, p3, p4, p5, 
              nrow = 2)
@@ -533,7 +496,7 @@ total_phenotypes <- all_gated %>%
 
   
 fig_6b <- pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 12)
+         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 16)
 
 fig_6b
 
@@ -623,8 +586,8 @@ fig_6d <- ggplot(sample_populations_all_groups, aes(x = factor(population,
   ggtitle("Cell Percentage of Total Live Leukocytes") +
   scale_color_manual(values = viridis_colors) +
   theme_gray() +
-  theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
-        axis.text.y = element_text(size = 13),
+  theme(axis.text.x = element_text(angle = 45, size = 15, hjust = 1),
+        axis.text.y = element_text(size = 15),
         strip.text.x = element_text(size = 10),
         axis.title = element_text(size = 20),
         title = element_text(size = 20),
@@ -656,7 +619,7 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
   mutate(percent_manual = round(percent_manual, digits = 2),
          percent_pipeline = round(percent_pipeline, digits = 2)) %>%
   mutate(absolute_difference = abs(difference),
-         average_difference = mean(absolute_difference)) %>%
+         average_difference = round(mean(absolute_difference), digits = 2)) %>%
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
