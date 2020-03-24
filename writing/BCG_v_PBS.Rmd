@@ -974,7 +974,7 @@ ggsave("../figures/fig_4.jpeg", fig_4, dpi = 300)
 ## Box plot and Bar plot
 
 Extra visualizations
-```{r fig.width = 6.5, fig.height= 6}
+```{r fig.width = 6.5, fig.height= 6.5}
 # Vaccinated v. unvaccinated for Day 30 bar
 facets_for_vacc_v_unvacc <- facets_for_timeseries %>%
   filter(Timepoint == 30)
@@ -991,9 +991,9 @@ supp_3a <- ggplot(facets_for_vacc_v_unvacc, aes(x = Group,
   ylab("Average Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
   theme_gray() +
-    theme(axis.text.x = element_text(angle = 40, size = 13, hjust = 1),
-        axis.text.y = element_text(size = 13),
-        strip.text.x = element_text(size = 10),
+    theme(axis.text.x = element_text(angle = 40, size = 15, hjust = 1),
+        axis.text.y = element_text(size = 15),
+        strip.text.x = element_text(size = 13),
         axis.title = element_text(size = 20),
         title = element_text(size = 20),
         legend.text = element_text(size=18),
@@ -1038,14 +1038,14 @@ supp_3b <- ggplot(facets_for_boxplot, aes(x = Group,
   ylab("Percent of Cells") +
   ggtitle("Lung Cell Percentage of Total Live Leukocytes") +
   theme_gray() +
-    theme(axis.text.x = element_text(angle = 40, size = 13, hjust = 1),
-        axis.text.y = element_text(size = 13),
-        strip.text.x = element_text(size = 10),
+    theme(axis.text.x = element_text(angle = 40, size = 15, hjust = 1),
+        axis.text.y = element_text(size = 15),
+        strip.text.x = element_text(size = 13),
         axis.title = element_text(size = 20),
         title = element_text(size = 20),
         legend.text = element_text(size=18),
         legend.key.size = unit(1.5, "line"),
-        legend.position = "none")
+        legend.position = "none") 
 
 supp_3b
 ggsave("../figures/supp_3b.jpeg", supp_3b, dpi = 300)
