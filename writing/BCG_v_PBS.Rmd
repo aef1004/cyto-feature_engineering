@@ -15,11 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 First, the packages must be loaded.
-
+library(flowCore) - need this package if going to transform the data
 ```{r warning= FALSE, message = FALSE}
 library(openCyto)
 library(data.table)
-library(flowCore)
 library(ggcyto)
 library(grid)
 library(pheatmap)
@@ -234,7 +233,7 @@ Gating the sample data
 
 I checked that all D30, D60, and D90 samples have Zombie and will run all the way through the gating when separated by day. Looking at the data, some of them are labeled Zombie NIR-A and Zombie Nir-A which means that they are not recognized as the same. - D90 has uncapitalized. I will need to read them in separately and then rename one of the two so that the cases match
 
-```{r warning=FALSE, fig.height = 2, fig.width=2}
+```{r warning=FALSE, fig.height=2.5, fig.width=2.5}
 
 fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/", 
                        pattern = ".fcs", full = TRUE)
@@ -320,66 +319,64 @@ all_gated_df <- rbind(all_gated_df, D90_all_gated_df)
 # confirm that all of the data is here
 unique(all_gated_df$filename)
 
-ggcyto(gs[[3]], aes(x = `FSC.A`, y = `FSC.H`)) + 
+fig_1a <- ggcyto(gs[[3]], aes(x = `FSC.A`, y = `FSC.H`)) + 
   geom_hex(bins = 50) + 
-  scale_fill_viridis_c() +
-  xlim(-100, 4000000) +
   geom_gate("singlets") +
+  scale_fill_viridis_c() +
   xlab("FSC-A") +
   ylab("FSC-H") +
   ggtitle("Singlets") +
   theme_gray() +
-  geom_stats() + 
+  geom_stats(size = 7) + 
   theme(strip.text = element_blank(),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 20),
-        title = element_text(size = 20))
+        axis.text = element_text(size = 24),
+        axis.title = element_text(size = 37),
+        title = element_text(size = 37)) +
+  scale_x_continuous(n.breaks = 3)
 
-ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) + 
-  geom_hex(bins = 50) + 
-  scale_fill_viridis_c() +
+fig_1a
+
+ggsave("../figures/fig_1a.jpeg", fig_1a, dpi = 300)
+
+fig_1b <- ggcyto(gs[[3]], aes(x = `FSC-A`, y = `SSC-A`)) + 
+  ggcyto_par_set(limits = list(y = c(0, 3.5e6), x = c(-100, 3.5e6)))+
+  geom_hex(bins = 80) + 
   geom_gate("lymph") +
-  ylim(c(-100, 4000000)) + 
+  scale_fill_viridis_c() +
   xlab("FSC-A") +
   ylab("SSC-A") +
   ggtitle("Leukocytes") +
   theme_gray() +
-  geom_stats()+ 
+  geom_stats(size = 7)+ 
   theme(strip.text = element_blank(),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 20),
-        title = element_text(size = 20))
+        axis.text = element_text(size = 24),
+        axis.title = element_text(size = 37),
+        title = element_text(size = 37))+
+  scale_x_continuous(n.breaks = 3)
 
-ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
-  geom_density() + 
-  geom_gate("live") + 
-  xlim(-100,50000) + 
+fig_1b
+
+ggsave("../figures/fig_1b.jpeg", fig_1b, dpi = 300)
+
+fig_1c <- ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
+  geom_area(stat = "density", fill = "#440154FF") +
+  geom_gate("live")   +
+  ggcyto_par_set(limits = list(y = c(0, 5e-5), x = c(-1000, 1e5)))+
   xlab("Zombie NIR-A") +
   ylab("Density") +
   ggtitle("Live") +
   theme_gray() +
-  geom_stats() +
+  geom_stats(size = 7, adjust = 0.45, position = position_nudge(x = 5000)) +
   labs_cyto("both") + 
   theme(strip.text = element_blank(),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 20),
-        title = element_text(size = 20))
+        axis.text = element_text(size = 24),
+        axis.title = element_text(size = 37),
+        title = element_text(size = 37))+
+  scale_x_continuous(n.breaks = 3)
 
+fig_1c
 
-# problem with plotting - it cuts off the data instead of making the entire x-axis shorter
-ggcyto(gs[[3]], aes(x = `Zombie Nir-A`)) + 
-  geom_density() + 
-  geom_gate("live")  +
-  xlab("Zombie NIR-A") +
-  ylab("Density") +
-  ggtitle("Live") +
-  theme_gray() +
-  geom_stats() +
-  labs_cyto("both") + 
-  theme(strip.text = element_blank(),
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 20),
-        title = element_text(size = 20))
+ggsave("../figures/fig_1c.jpeg", fig_1c, dpi = 300)
 ```
 
 ## Data cleaning of FMOs
@@ -631,6 +628,7 @@ fig_2 <- grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
              nrow = 5, left = textGrob("SSC-A", rot = 90, vjust = 1, gp=gpar(fontsize=24, lineheight=1)))
 
 ggsave("../figures/fig_2.jpeg", fig_2, dpi = 300)
+ggsave("../figures/fig_2.tiff", fig_2, dpi = 300)
 ```
 
 ## Feature engineer the data
@@ -794,7 +792,7 @@ add_pops <- left_join(all_options, sample_populations)
 # add populations to the original gated data and replace NA percentages with 0
 sample_populations_all_groups <- left_join(add_pops, all_gated) %>%
   select(population, filename, percentage) %>%
-  mutate_all(list(~tidyr::replace_na(.,0))))
+  mutate_all(list(~tidyr::replace_na(.,0)))
 
 # these are the colors I want for the pheatmap annotations
 my_colors <- list(lineage = c(`Double Negative` = "darkturquoise", 
@@ -891,7 +889,7 @@ Data Visualization
 
  - Population correlation Plot
 
-```{r fig.height = 4.5, fig.width = 4.5}
+```{r fig.height = 6, fig.width = 6}
 
 # correlation plot without the name "pop"
 corr <- sample_populations_all_groups %>%
@@ -903,7 +901,7 @@ corr <- sample_populations_all_groups %>%
 corr <- round(cor(corr), 1)
 
 # plot the population correlation plot separated by the lineages
-fig_3b <- superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), left.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 3, left.label.text.size = 3)
+fig_3b <- superheat(corr,  row.title = "Populations", column.title = "Populations",  column.title.size = 8, row.title.size = 8, bottom.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), left.label.col = c(rep("darkturquoise", DN_length), rep("plum3", T_helper_length), rep("hotpink", Cytotoxic_length), rep("orange", DP_length)), bottom.label.size = .05, left.label.size = .05, bottom.label.text.size = 5, left.label.text.size = 5)
 
 fig_3b
 
@@ -1381,3 +1379,11 @@ mtext("lineage", at=0.05, cex=1.6, font = 2)
 BiocManager::valid()
 sessionInfo()
 ```
+
+
+
+`
+
+
+
+
