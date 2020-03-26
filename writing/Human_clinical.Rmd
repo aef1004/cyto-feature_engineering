@@ -525,8 +525,8 @@ Want to add annotations to the phenotype plot based on expression of different m
 
 ```{r}
 # Split populations based on T or B cells
-my_colors <- list(lineage = c(`T cell` = "darkorchid1", `B cell` = "#F8766D",
-                `CD3+ B cells` = "#00B0F6", `Other Leukocyte` = "yellow"))
+my_colors <- list(lineage = c(`Other Leukocyte` = "yellow",  `B cell` = "#F8766D", 
+                              `T cell` = "darkorchid1",`CD3+ B cells` = "#00B0F6"))
 
 
 test_rearrange <- sample_populations %>%
