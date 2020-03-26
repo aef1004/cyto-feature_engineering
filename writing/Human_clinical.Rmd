@@ -656,3 +656,6 @@ fig_6f
 ggsave("../figures/fig_6f.jpeg", fig_6f, dpi = 300)
 ```
 
+```{r}
+BiocManager::valid()
+```

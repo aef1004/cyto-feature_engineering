@@ -63,3 +63,6 @@ ggsave("../figures/fig_5a.jpeg")
 
 ```
 
+```{r}
+BiocManager::valid()
+```
