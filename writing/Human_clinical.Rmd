@@ -351,15 +351,16 @@ viridis_colors <- c("#3F4788FF", "#56C667FF")
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 ```
 
+## Data cleaning
 Initial gating of sample data
-```{r warning = FALSE, fig.width = 9, fig.height=5, warning=FALSE}
+```{r fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
 ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
 
 # only for viewing that read in 
-dtTemplate <- fread(ws, autostart = 1L) 
+dtTemplate <- fread(ws) 
 
-initial_gate <- gatingTemplate(ws, autostart = 1L) 
+initial_gate <- gatingTemplate(ws) 
 
 fcsFile <- list.files("../Data/flow/Human_Clinical/", 
                        pattern = ".fcs", full = TRUE)
@@ -371,13 +372,13 @@ ncfs <- read.ncdfFlowSet(fcsFile)
 gs <- GatingSet(ncfs)
 
 # gate the samples
-gating(initial_gate, gs)
+gt_gating(initial_gate, gs)
 
 # View the gates
 plotGate(gs[[1]])
 
 # Pull out the data
-gated_data <- getData(gs, "leukocytes") %>% 
+gated_data <- gs_pop_get_data(gs, "leukocytes") %>% 
   as.flowSet() 
 
 # initialize the gated data df
@@ -404,71 +405,42 @@ all_gated_for_plot <- all_gated_df %>%
 
 
  
-p1 <- ggplot(all_gated_for_plot, aes(x = HLA_DR, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "HLA_DR")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p2 <- ggplot(all_gated_for_plot, aes(x = CD19, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD19")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p3 <- ggplot(all_gated_for_plot, aes(x = CD3, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD3")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p4 <- ggplot(all_gated_for_plot, aes(x = CD45, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD45")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-p5 <- ggplot(all_gated_for_plot, aes(x = CD27, y = SSC.A)) +
-   geom_hex(bins = 100) +
-   scale_fill_viridis_c() +
-   xlim(-1, 5) +
-   ylab("SSC-A") +
-   geom_vline(xintercept = gate_mindensity_amy(all_gated_for_plot, "CD27")) +
-  theme_gray()+
-  theme(axis.text = element_text(size =20),
-        axis.title = element_text(size = 40),
-        legend.title=element_text(size=16),
-        legend.text=element_text(size=rel(1.5)))
-
-grid.arrange(p1, p2, p3, p4, p5, 
-             nrow = 2)
-
 
 ```
 
+## Clear separation of populations --> Gate with minimum density between + and - populations
+```{r fig.width = 5.25, fig.height = 3}
+
+separation_ggplot <- function(df, x_axis, x_title) {
+  ggplot(df, aes(x = x_axis, y = SSC.A)) +
+   geom_hex(bins = 100) +
+   scale_fill_viridis_c() +
+   xlab(x_title) +
+   ylab("SSC-A") +
+   geom_vline(xintercept = gate_mindensity_amy(df, x_title), size = .7) +
+  theme_gray()+
+  theme(axis.text = element_text(size =12),
+        axis.title = element_text(size = 20),
+        legend.title=element_text(size=12),
+        legend.text=element_text(size=rel(.75)),
+        legend.key.size = unit(.5, "cm"))
+}
+
+p1 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$HLA_DR, "HLA_DR")
+p2 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD19, "CD19")
+p3 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD3, "CD3")
+p4 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD45, "CD45")
+p5 <- separation_ggplot(all_gated_for_plot, all_gated_for_plot$CD27, "CD27")
+
+fig_6a <- grid.arrange(p1, p2, p3, p4, p5, 
+             nrow = 2)
+
+fig_6a 
+
+ggsave("../figures/fig_6a.jpeg", fig_6a, dpi = 300)
+```
+
+## Feature engineer the data
 Feature cut the data to get all of the possible populations for each file with the cell count and number of cells. Feature engineering is based on the minimum density between the single color peaks.
 
 ```{r}
@@ -507,6 +479,7 @@ all_gated <- all_gated_df %>%
 
 ```
 
+## Initial identification of populations plot
 Data visualization
 
 We first want to view all of the different cell phenotypes within the data, and then we can filter the data to see the ones that we're interested in, for example, CD45+ leukocytes.
@@ -522,8 +495,12 @@ total_phenotypes <- all_gated %>%
  # mutate_all(~as.numeric.factor(.))
 
   
-pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
-         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 12)
+fig_6b <- pheatmap(total_phenotypes, cluster_rows = FALSE, cluster_cols = FALSE, 
+         color = viridis_colors, show_rownames = FALSE, angle_col = 45, legend = F, fontsize_col = 16)
+
+fig_6b
+
+ggsave("../figures/fig_6b.jpeg", fig_6b, dpi = 300)
 
 # gives the total number of populations
 nrow(total_phenotypes) 
@@ -539,6 +516,7 @@ sample_populations <- all_gated %>%
 
 ```
 
+## Filter to smaller subset of populations and plot
 Data visualization
 
 - phenotype plot
@@ -547,8 +525,8 @@ Want to add annotations to the phenotype plot based on expression of different m
 
 ```{r}
 # Split populations based on T or B cells
-my_colors <- list(lineage = c(`T cell` = "darkorchid1", `B cell` = "#F8766D",
-                `CD3+ B cells` = "#00B0F6", `Other Luekocyte` = "yellow"))
+my_colors <- list(lineage = c(`Other Leukocyte` = "yellow",  `B cell` = "#F8766D", 
+                              `T cell` = "darkorchid1",`CD3+ B cells` = "#00B0F6"))
 
 
 test_rearrange <- sample_populations %>%
@@ -561,17 +539,21 @@ test_rearrange <- sample_populations %>%
 annotation <- test_rearrange %>%
   mutate(lineage = ifelse(CD3 == 1 & CD19 == 0 , "T cell",
                           ifelse(CD3 == 0 & CD19 == 1, "B cell", 
-                                 ifelse(CD3 == 1 & CD19 == 1, "CD3+ B cells", "Other Luekocyte")))) %>%
+                                 ifelse(CD3 == 1 & CD19 == 1, "CD3+ B cells", "Other Leukocyte")))) %>%
   select(lineage) %>%
   mutate(population = paste0("Pop", c(1:nrow(sample_populations)))) %>%
   mutate(lineage = as.factor(lineage)) %>%
   column_to_rownames("population")
   
-pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
+fig_6c <- pheatmap(test_rearrange, cluster_rows = FALSE, cluster_cols = FALSE,
            labels_row = rownames(annotation), 
            annotation_row = annotation,  annotation_colors = my_colors,  color = viridis_colors,
            cellwidth = 15, cellheight = 15, angle_col = 45, legend = F,
            main = "Leukocytes")
+
+fig_6c
+
+ggsave("../figures/fig_6c.jpeg", fig_6c, dpi = 300)
 ```
 
 Note I cannot do a correlation plot because I only have 1 sample (not multiple datapoints to see how similar populations are to each other)
@@ -587,13 +569,16 @@ sample_populations_all_groups <- left_join(test_rearrange, all_gated) %>%
   mutate_all(list(~replace_na(., 0)))
 ```
 
+# Bar plot
 Data visualization
 
 - percentage of cells in each population
 
 ```{r}
-ggplot(sample_populations_all_groups, aes(x = factor(population, 
-                                                     levels = c(paste0("Pop", 1:nrow(sample_populations_all_groups)))), 
+
+fig_6d <- ggplot(sample_populations_all_groups, aes(x = factor(population, 
+                                                     levels = c(paste0("Pop",
+                                                                       1:nrow(sample_populations_all_groups)))), 
                                           y = percentage, fill = "pink")) +
   geom_bar(stat = "identity") +
   xlab("Populations") +
@@ -601,12 +586,16 @@ ggplot(sample_populations_all_groups, aes(x = factor(population,
   ggtitle("Cell Percentage of Total Live Leukocytes") +
   scale_color_manual(values = viridis_colors) +
   theme_gray() +
-  theme(axis.text.x = element_text(angle = 45, size = 13, hjust = 1),
-        axis.text.y = element_text(size = 13),
+  theme(axis.text.x = element_text(angle = 45, size = 15, hjust = 1),
+        axis.text.y = element_text(size = 15),
         strip.text.x = element_text(size = 10),
         axis.title = element_text(size = 20),
         title = element_text(size = 20),
         legend.position = "none")
+
+fig_6d
+
+ggsave("../figures/fig_6d.jpeg", fig_6d, dpi = 300)
 ```
 
 Confirm pipeline populations with manual gating
@@ -630,11 +619,11 @@ comparison <- full_join(manual_gating, sample_populations_all_groups, by = c("po
   mutate(percent_manual = round(percent_manual, digits = 2),
          percent_pipeline = round(percent_pipeline, digits = 2)) %>%
   mutate(absolute_difference = abs(difference),
-         average_difference = mean(absolute_difference)) %>%
+         average_difference = round(mean(absolute_difference), digits = 2)) %>%
   select(population, percent_manual, percent_pipeline, absolute_difference, average_difference) 
 
 # print out the comparison data in a pretty table
-comparison[1:14,] %>%
+fig_6e <- comparison[1:14,] %>%
   mutate(Population = population,
          `% Based On Manual Gating` = percent_manual,
          `% Based on Automated Pipeline` = percent_pipeline,
@@ -643,11 +632,14 @@ comparison[1:14,] %>%
   select(Population, `% Based On Manual Gating`, `% Based on Automated Pipeline`, `Absolute Difference`, `Average Difference`) %>%
   kable(align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), font_size = 25) %>%
-  row_spec(0:nrow(comparison), color = "black") %>%
-  print()
+  row_spec(0:nrow(comparison), color = "black") 
+
+fig_6e
+
+save_kable(fig_6e, file = "../figures/fig_6e.jpeg")
 
 # compare the two gating types with manual v. pipeline plot
-ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
+fig_6f <- ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   geom_point(size = 3) +
   geom_abline(slope = 1, intercept = 0, size = 1) +
   stat_cor(aes(x = percent_pipeline, y = percent_manual), data = comparison, "spearman", size = 7) +
@@ -658,8 +650,12 @@ ggplot(comparison, aes(x = percent_pipeline, y = percent_manual)) +
   theme(axis.title = element_text(size = 20),
         axis.text = element_text(size = 15),
         title = element_text(size = 15)) 
+
+fig_6f
+
+ggsave("../figures/fig_6f.jpeg", fig_6f, dpi = 300)
 ```
 
 ```{r}
-sessionInfo()
+BiocManager::valid()
 ```
