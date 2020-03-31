@@ -211,7 +211,7 @@ Read in the initial gating strategy, which gates to live lymphocytes, into a `ga
 
 ```{r}
 # Identify the file with the gating strategy 
-ws <- list.files("../Data/flow/BCG_v_PBS", 
+ws <- list.files("../data/flow/BCG_v_PBS", 
                  pattern = "AmyGating_intracellular.csv", 
                  full = TRUE)
 ws
@@ -234,7 +234,7 @@ Read in the flow cytometry data from the FMO experiments.
 ```{r}
 # Identify the file names of all 20 FCS flow cytometry experiments to 
 # read in. 
-FMO_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs", 
+FMO_fcsFiles <- list.files("../data/flow/BCG_v_PBS/Tcell/FMOs", 
                        pattern = ".fcs", full = TRUE)
 FMO_fcsFiles
 ```
@@ -311,7 +311,7 @@ through our final code.]
 # I accidently got CD4 into the CD4 FMO, so I had to redo it. I also tried CD69 to see if it was experiment-dependent, but CD69 problems are due to spillover
 
 # Add in the updated FMOS
-FMO_fcsFiles_redo <- list.files("../Data/flow/BCG_v_PBS/Tcell/FMOs/June6_Redo", 
+FMO_fcsFiles_redo <- list.files("../data/flow/BCG_v_PBS/Tcell/FMOs/June6_Redo", 
                        pattern = ".fcs", full = TRUE)
 
 ncfs_FMO_redo <- read.ncdfFlowSet(FMO_fcsFiles_redo) 
@@ -660,7 +660,7 @@ I checked that all D30, D60, and D90 samples have Zombie and will run all the wa
 
 ```{r warning=FALSE, fig.height = 2, fig.width=2}
 
-fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/", 
+fcsFiles <- list.files("../data/flow/BCG_v_PBS/Tcell/", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -685,12 +685,12 @@ gated_data <- getData(gs, "live") %>%
 
 
 # read in the D90 data
-D90_ws <- list.files("../Data/flow/BCG_v_PBS", 
+D90_ws <- list.files("../data/flow/BCG_v_PBS", 
                      pattern = "AmyGating_intracellular_D90.csv", full = TRUE)
 
 D90_initial_gate <- gatingTemplate(D90_ws, autostart = 1L) 
 
-D90_fcsFiles <- list.files("../Data/flow/BCG_v_PBS/Tcell/D90", 
+D90_fcsFiles <- list.files("../data/flow/BCG_v_PBS/Tcell/D90", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer

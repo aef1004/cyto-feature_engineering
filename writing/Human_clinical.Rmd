@@ -355,14 +355,14 @@ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 Initial gating of sample data
 ```{r fig.width = 9, fig.height=5, warning=FALSE}
 # read in the gating strategy
-ws <- list.files("../Data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
+ws <- list.files("../data/flow/Human_Clinical", pattern = "human_clinical_gating.csv", full = TRUE)
 
 # only for viewing that read in 
 dtTemplate <- fread(ws) 
 
 initial_gate <- gatingTemplate(ws) 
 
-fcsFile <- list.files("../Data/flow/Human_Clinical/", 
+fcsFile <- list.files("../data/flow/Human_Clinical/", 
                        pattern = ".fcs", full = TRUE)
 
 # ncdfFlowset object contains row names with the individual samples and column names with the markers/parameters used in the flow cytometer
@@ -602,7 +602,7 @@ Confirm pipeline populations with manual gating
 ```{r}
 
 # read in and clean manual gating percentage data
-manual_gating <- read_xlsx("../Data/flow/Human_Clinical/Manual_gating.xlsx") %>%
+manual_gating <- read_xlsx("../data/flow/Human_Clinical/Manual_gating.xlsx") %>%
   dplyr::rename(`population` = "...1",
                 percent_manual = "Manual percent") %>%
   na.omit()

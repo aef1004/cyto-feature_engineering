@@ -25,7 +25,7 @@ Note: For the publication we are only analyzing lung data, so filter to lung.
 Additional Note: The excel file contains the data organized with the following columns: Group (experimental group), Number (the mouse number within a group), Organ (organ from which the data is collected), Timepoint (day in which the data was taken post-infection), CFU (log-10 colony forming units).
 ```{r}
 
-lung_CFU <- read_xlsx("../Data/M.smeg_CFU.xlsx") %>%
+lung_CFU <- read_xlsx("../data/M.smeg_CFU.xlsx") %>%
   rename(Day = Timepoint) %>%
   group_by(Organ, Day) %>%
   mutate(Group = replace(Group, Group == "Group1", "PBS")) %>%
