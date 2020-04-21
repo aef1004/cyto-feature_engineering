@@ -1,4 +1,4 @@
-# Cyto-Feature Engineering Manuscript
+# Cyto-Feature Engineering: A Pipeline for Flow Cytometry Analysis to Uncover Immune Populations and Association with Disease
 
 This repository contains the code to analyze the data and create the plots for the manuscript, "Cyto-Feature Engineering: A Pipeline for Flow Cytometry Analysis to Uncover Immune Populations and Association with Disease". [May want to add info about how this code can be reused and / or a license / copyright info.]
 
@@ -12,4 +12,4 @@ Repository Directory
 - Lineage_Table.Rmd : code to create the tables to describe the lineage and cell phenotype in Project 1
 - Time_BCG_v_PBS.Rmd : code to calculate the amount of time it takes to execute analysis pipeline on Project 1 for different inputs of cells
 
-Note: The .fcs files are too large to push to Github. The data can be obtained from Amy Fox (amyfox@colostate.edu). The data is also submitted to FlowRepository, and will be published after publication. 
+Note: The .fcs files are too large to push to Github. The data can be obtained from Amy Fox (amyfox@colostate.edu). The data is also published on FlowRepository https://flowrepository.org/id/RvFrMfWyY0wR3ZM3cvlsAsQPBmAOXmMUzURGm1D8V0ShqSNnH2UCrPdpttuoqNS4. 
