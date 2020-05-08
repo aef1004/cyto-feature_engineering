@@ -1,6 +1,6 @@
 # Cyto-Feature Engineering: A Pipeline for Flow Cytometry Analysis to Uncover Immune Populations and Association with Disease
 
-This repository contains the code to analyze the data and create the plots for the manuscript, "Cyto-Feature Engineering: A Pipeline for Flow Cytometry Analysis to Uncover Immune Populations and Association with Disease". R Code and data released under Artistic License 2.0.
+This repository contains the code to analyze the data and create the plots for the manuscript, "Cyto-Feature Engineering: A Pipeline for Flow Cytometry Analysis to Uncover Immune Populations and Association with Disease". The manuscript can be found at https://www.nature.com/articles/s41598-020-64516-0. R Code and data released under Artistic License 2.0.
 
 This repository contains data from two projects: The first project (Project 1) contains lung data from C57BL/6 mice that were vaccinated with either BCG or PBS (control). The mice were subsequently infected with *Mycobacterium tuberuclosis* and evaluated 30, 60, and 90 days post-infection. The second project (Project 2) contains human whole blood data from a healthy individual.
 
